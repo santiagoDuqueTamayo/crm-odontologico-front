@@ -1,11 +1,14 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
+//import { RouterOutlet } from '@angular/router';
+import { OdontogramaViewComponent } from './features/odontograma/odontograma-view/odontograma-view';
 
 @Component({
   selector: 'app-root',
-  imports: [],
+  standalone: true,
+  imports: [ OdontogramaViewComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App {
-  protected readonly title = signal('crm-odontologico');
+export class App { 
+  title = 'crm-odontologico';
 }

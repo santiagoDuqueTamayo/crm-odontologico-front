@@ -1,0 +1,37 @@
+<div class="grid-herradura">
+  <!-- Arriba Izquierda (Paciente Sup. Derecho) -->
+  <div class="cuadrante"> 
+    <app-cuadrante 
+      [dientes]="cuadranteSupDer()" 
+      (dienteClickeado)="dienteClickeado.emit($event)"
+      (caraClickeada)="caraClickeada.emit($event)">
+    </app-cuadrante>
+  </div>
+
+  <!-- Arriba Derecha (Paciente Sup. Izquierdo) -->
+  <div class="cuadrante"> 
+    <app-cuadrante 
+      [dientes]="cuadranteSupIzq()"
+      (dienteClickeado)="dienteClickeado.emit($event)"
+      (caraClickeada)="caraClickeada.emit($event)">
+    </app-cuadrante>
+  </div>
+
+  <!-- Abajo Izquierda (Paciente Inf. Derecho) -->
+  <div class="cuadrante"> 
+    <app-cuadrante 
+      [dientes]="cuadranteInfDer()"
+      (dienteClickeado)="dienteClickeado.emit($event)"
+      (caraClickeada)="caraClickeada.emit($event)">
+    </app-cuadrante>
+  </div>
+
+  <!-- Abajo Derecha (Paciente Inf. Izquierdo) -->
+  <div class="cuadrante"> 
+    <app-cuadrante 
+      [dientes]="cuadranteInfIzq()"
+      (dienteClickeado)="dienteClickeado.emit($event)"
+      (caraClickeada)="caraClickeada.emit($event)">
+    </app-cuadrante>
+  </div>
+</div>

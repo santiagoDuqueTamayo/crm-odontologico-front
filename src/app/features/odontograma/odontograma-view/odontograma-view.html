@@ -1,0 +1,13 @@
+<div class="odontograma-layout">
+  <h2 class="titulo">Odontograma</h2>
+  
+  <!-- Pasamos la lista completa de dientes y escuchamos los eventos -->
+  <app-odontograma-grid 
+    [dientes]="dientes()"
+    (dienteClickeado)="onDienteSeleccionado($event)"
+    (caraClickeada)="onCaraSeleccionada($event)">
+  </app-odontograma-grid>
+  
+  <!-- Por ahora, solo le mostramos al componente detalle que hubo un clic -->
+  <app-detalle-diente></app-detalle-diente>
+</div>

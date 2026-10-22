@@ -1,0 +1,14 @@
+.odontograma-layout {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.titulo {
+  color: #334155;
+  margin-bottom: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}

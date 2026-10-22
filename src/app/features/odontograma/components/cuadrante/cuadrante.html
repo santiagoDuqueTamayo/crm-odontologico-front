@@ -1,0 +1,10 @@
+<div class="cuadrante-fila">
+  @for (diente of dientes(); track diente.numero) {
+    <app-diente-grafico 
+      [numeroDiente]="diente.numero"
+      [caras]="diente.caras"
+      (dienteClickeado)="dienteClickeado.emit($event)"
+      (caraClickeada)="caraClickeada.emit($event)">
+    </app-diente-grafico>
+  }
+</div>
