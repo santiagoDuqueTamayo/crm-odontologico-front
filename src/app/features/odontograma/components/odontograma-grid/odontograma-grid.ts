@@ -1,22 +1,22 @@
 import { Component, input, output, computed } from '@angular/core';
-// 1. Importamos el componente correcto
 import { CuadranteComponent } from '../cuadrante/cuadrante';
+import { DienteData } from '../../models/odontograma.models';
 
 @Component({
   selector: 'app-odontograma-grid',
   standalone: true,
-  // 2. Colocamos el CuadranteComponent en los imports y quitamos el DienteGrafico
   imports: [CuadranteComponent],
   templateUrl: './odontograma-grid.html',
   styleUrl: './odontograma-grid.scss'
 })
 export class OdontogramaGridComponent {
-  dientes = input.required<any[]>();
+  dientes = input.required<DienteData[]>();
+  numeroSeleccionado = input<number | null>(null);
 
-  cuadranteSupDer = computed(() => this.dientes().filter(d => d.numero >= 11 && d.numero <= 18).reverse());
-  cuadranteSupIzq = computed(() => this.dientes().filter(d => d.numero >= 21 && d.numero <= 28));
-  cuadranteInfDer = computed(() => this.dientes().filter(d => d.numero >= 41 && d.numero <= 48).reverse());
-  cuadranteInfIzq = computed(() => this.dientes().filter(d => d.numero >= 31 && d.numero <= 38));
+  cuadranteSupDer = computed(() => this.dientes().filter((diente) => diente.numero >= 11 && diente.numero <= 18).reverse());
+  cuadranteSupIzq = computed(() => this.dientes().filter((diente) => diente.numero >= 21 && diente.numero <= 28));
+  cuadranteInfDer = computed(() => this.dientes().filter((diente) => diente.numero >= 41 && diente.numero <= 48).reverse());
+  cuadranteInfIzq = computed(() => this.dientes().filter((diente) => diente.numero >= 31 && diente.numero <= 38));
 
   dienteClickeado = output<number>();
   caraClickeada = output<{numero: number, cara: string}>();

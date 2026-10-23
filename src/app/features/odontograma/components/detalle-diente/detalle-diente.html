@@ -1,4 +1,28 @@
-<div class="detalle-box">
-  <h3 class="detalle-titulo">Estado del diente</h3>
-  <p class="detalle-texto">Aquí va el detalle exacto de cada cara del diente</p>
-</div>
+<section class="detalle-box" aria-live="polite">
+  @if (diente(); as pieza) {
+    <div class="detalle-header">
+      <div>
+        <p class="detalle-kicker">PIEZA SELECCIONADA</p>
+        <h3 class="detalle-titulo">{{ pieza.nombreColoquial }}</h3>
+      </div>
+      <span class="estado-general">{{ pieza.estadoGeneral.estado }}</span>
+    </div>
+
+    <div class="caras-lista">
+      @for (cara of caras(); track cara.id) {
+        <div class="cara-item" [class.active]="caraSeleccionada() === cara.id">
+          <span>{{ cara.nombre }}</span>
+          <strong>{{ cara.estado }}</strong>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="detalle-vacio">
+      <span class="detalle-icon" aria-hidden="true">+</span>
+      <div>
+        <h3 class="detalle-titulo">Información del diente</h3>
+        <p class="detalle-texto">Selecciona una pieza dental para consultar el estado de sus caras.</p>
+      </div>
+    </div>
+  }
+</section>

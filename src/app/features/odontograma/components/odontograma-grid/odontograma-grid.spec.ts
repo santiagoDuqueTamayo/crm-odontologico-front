@@ -1,19 +1,20 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { OdontogramaGrid } from './odontograma-grid';
+import { OdontogramaGridComponent } from './odontograma-grid';
 
-describe('OdontogramaGrid', () => {
-  let component: OdontogramaGrid;
-  let fixture: ComponentFixture<OdontogramaGrid>;
+describe('OdontogramaGridComponent', () => {
+  let component: OdontogramaGridComponent;
+  let fixture: ComponentFixture<OdontogramaGridComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [OdontogramaGrid]
+      imports: [OdontogramaGridComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(OdontogramaGrid);
+    fixture = TestBed.createComponent(OdontogramaGridComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('dientes', []);
     await fixture.whenStable();
   });
 

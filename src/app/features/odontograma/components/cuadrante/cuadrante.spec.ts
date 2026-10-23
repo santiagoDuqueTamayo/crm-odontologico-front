@@ -1,19 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Cuadrante } from './cuadrante';
+import { CuadranteComponent } from './cuadrante';
 
-describe('Cuadrante', () => {
-  let component: Cuadrante;
-  let fixture: ComponentFixture<Cuadrante>;
+describe('CuadranteComponent', () => {
+  let component: CuadranteComponent;
+  let fixture: ComponentFixture<CuadranteComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [Cuadrante]
+      imports: [CuadranteComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(Cuadrante);
+    fixture = TestBed.createComponent(CuadranteComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('dientes', []);
+    fixture.componentRef.setInput('orientacion', 'superior-derecho');
     await fixture.whenStable();
   });
 

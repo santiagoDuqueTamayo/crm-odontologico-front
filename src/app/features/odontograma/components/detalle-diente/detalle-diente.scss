@@ -1,20 +1,109 @@
 .detalle-box {
-  border: 1px solid #000000;
-  background-color: #ffffff;
-  padding: 24px;
-  min-height: 150px;
+  margin: 16px 27px 24px;
+  padding: 16px 18px;
+  border: 1px solid #e6efea;
+  border-radius: 11px;
+  background: #fbfdfc;
+}
+
+.detalle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 13px;
+}
+
+.detalle-kicker {
+  margin: 0 0 4px;
+  color: #56846c;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 .detalle-titulo {
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 1rem;
+  margin: 0;
+  color: #1d4938;
+  font-size: 14px;
   font-weight: 700;
-  color: #475569;
+}
+
+.estado-general {
+  padding: 6px 10px;
+  border: 1px solid #d6e9dc;
+  border-radius: 999px;
+  background: #eff8f2;
+  color: #26734e;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.caras-lista {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cara-item {
+  display: grid;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid #e4ede7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cara-item span {
+  color: #74867d;
+  font-size: 10px;
+}
+
+.cara-item strong {
+  color: #345b48;
+  font-size: 11px;
+}
+
+.cara-item.active {
+  border-color: #88bd9c;
+  background: #eef8f1;
+  box-shadow: inset 0 0 0 1px #cde7d5;
+}
+
+.detalle-vacio {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+}
+
+.detalle-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf5ee;
+  color: #438262;
+  font-size: 21px;
+  font-weight: 400;
 }
 
 .detalle-texto {
-  color: #334155;
-  font-size: 0.95rem;
+  margin: 5px 0 0;
+  color: #75867e;
+  font-size: 11px;
   line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .detalle-box {
+    margin: 13px 14px 16px;
+    padding: 14px;
+  }
+
+  .caras-lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

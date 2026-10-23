@@ -1,13 +1,75 @@
-<div class="odontograma-layout">
-  <h2 class="titulo">Odontograma</h2>
-  
-  <!-- Pasamos la lista completa de dientes y escuchamos los eventos -->
-  <app-odontograma-grid 
-    [dientes]="dientes()"
-    (dienteClickeado)="onDienteSeleccionado($event)"
-    (caraClickeada)="onCaraSeleccionada($event)">
-  </app-odontograma-grid>
-  
-  <!-- Por ahora, solo le mostramos al componente detalle que hubo un clic -->
-  <app-detalle-diente></app-detalle-diente>
-</div>
+<header class="topbar">
+  <a class="brand" href="#inicio" aria-label="Sonrisa Clínica, inicio">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 40 40" fill="none">
+        <path d="M20 5.5c-5.3-3-12.7.4-12 8.4.7 8.5 4.1 20.6 8.1 20.6 2.4 0 1.8-8.8 4.5-8.8s2.1 8.8 4.5 8.8c4 0 7.4-12.1 8.1-20.6.7-8-6.7-11.4-12-8.4Z" fill="currentColor"/>
+        <path d="M20 9v11M14.5 14.5h11" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <span class="brand-copy">
+      <strong>Sonrisa Clínica</strong>
+      <small>Gestión odontológica</small>
+    </span>
+  </a>
+
+  <nav class="main-nav" aria-label="Navegación principal">
+    <a class="nav-link active" href="#odontograma">Odontograma</a>
+    <a class="nav-link" href="#nota-clinica">Nota clínica</a>
+  </nav>
+
+  <div class="topbar-profile">
+    <span class="profile-avatar" aria-hidden="true">DC</span>
+    <span class="profile-copy"><strong>Doctor</strong><small>Consultorio</small></span>
+  </div>
+</header>
+
+<main id="inicio" class="page-shell">
+  <section class="page-heading" aria-labelledby="page-title">
+    <div>
+      <p class="eyebrow">CONSULTA · REGISTRO CLÍNICO</p>
+      <h1 id="page-title">Registro odontológico</h1>
+      <p class="page-description">Explora las piezas dentales y registra las observaciones de la consulta.</p>
+    </div>
+    <div class="record-badge"><span></span> Consulta en curso</div>
+  </section>
+
+  <section id="odontograma" class="panel chart-panel" aria-labelledby="chart-title">
+    <div class="panel-heading">
+      <div>
+        <p class="section-kicker">EXAMEN DENTAL</p>
+        <h2 id="chart-title">Odontograma</h2>
+        <p class="panel-description">Selecciona un diente o una de sus caras para revisar su información.</p>
+      </div>
+      <span class="tooth-count">32 piezas</span>
+    </div>
+
+    <div class="chart-content">
+      <app-odontograma-grid
+        [dientes]="dientes()"
+        [numeroSeleccionado]="dienteSeleccionado()?.numero ?? null"
+        (dienteClickeado)="onDienteSeleccionado($event)"
+        (caraClickeada)="onCaraSeleccionada($event)">
+      </app-odontograma-grid>
+
+      <div class="chart-legend" aria-label="Leyenda">
+        <span><i class="legend-dot healthy"></i>Sano</span>
+        <span><i class="legend-dot selected"></i>Seleccionado</span>
+        <span class="legend-help">Haz clic en una cara para seleccionarla</span>
+      </div>
+    </div>
+
+    <app-detalle-diente
+      [diente]="dienteSeleccionado()"
+      [caraSeleccionada]="caraSeleccionada()">
+    </app-detalle-diente>
+  </section>
+
+  <app-nota-clinica
+    id="nota-clinica"
+    [finalizada]="consultaFinalizada()"
+    (notaCambiada)="onNotaCambiada($event)"
+    (finalizar)="finalizarConsulta($event)">
+  </app-nota-clinica>
+
+  <footer class="page-footer">Sonrisa Clínica <span>·</span> Herramienta de apoyo para el registro odontológico</footer>
+</main>

@@ -1,35 +1,39 @@
 <div class="grid-herradura">
-  <!-- Arriba Izquierda (Paciente Sup. Derecho) -->
-  <div class="cuadrante"> 
-    <app-cuadrante 
-      [dientes]="cuadranteSupDer()" 
+  <div class="cuadrante upper">
+    <app-cuadrante
+      orientacion="superior-derecho"
+      [dientes]="cuadranteSupDer()"
+      [numeroSeleccionado]="numeroSeleccionado()"
       (dienteClickeado)="dienteClickeado.emit($event)"
       (caraClickeada)="caraClickeada.emit($event)">
     </app-cuadrante>
   </div>
 
-  <!-- Arriba Derecha (Paciente Sup. Izquierdo) -->
-  <div class="cuadrante"> 
-    <app-cuadrante 
+  <div class="cuadrante upper">
+    <app-cuadrante
+      orientacion="superior-izquierdo"
       [dientes]="cuadranteSupIzq()"
+      [numeroSeleccionado]="numeroSeleccionado()"
       (dienteClickeado)="dienteClickeado.emit($event)"
       (caraClickeada)="caraClickeada.emit($event)">
     </app-cuadrante>
   </div>
 
-  <!-- Abajo Izquierda (Paciente Inf. Derecho) -->
-  <div class="cuadrante"> 
-    <app-cuadrante 
+  <div class="cuadrante lower">
+    <app-cuadrante
+      orientacion="inferior-derecho"
       [dientes]="cuadranteInfDer()"
+      [numeroSeleccionado]="numeroSeleccionado()"
       (dienteClickeado)="dienteClickeado.emit($event)"
       (caraClickeada)="caraClickeada.emit($event)">
     </app-cuadrante>
   </div>
 
-  <!-- Abajo Derecha (Paciente Inf. Izquierdo) -->
-  <div class="cuadrante"> 
-    <app-cuadrante 
+  <div class="cuadrante lower">
+    <app-cuadrante
+      orientacion="inferior-izquierdo"
       [dientes]="cuadranteInfIzq()"
+      [numeroSeleccionado]="numeroSeleccionado()"
       (dienteClickeado)="dienteClickeado.emit($event)"
       (caraClickeada)="caraClickeada.emit($event)">
     </app-cuadrante>

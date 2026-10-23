@@ -1,8 +1,9 @@
-<div class="cuadrante-fila">
+<div class="cuadrante-fila" [class]="orientacion()">
   @for (diente of dientes(); track diente.numero) {
     <app-diente-grafico 
       [numeroDiente]="diente.numero"
       [caras]="diente.caras"
+      [seleccionado]="numeroSeleccionado() === diente.numero"
       (dienteClickeado)="dienteClickeado.emit($event)"
       (caraClickeada)="caraClickeada.emit($event)">
     </app-diente-grafico>

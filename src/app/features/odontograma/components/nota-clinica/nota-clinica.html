@@ -1,0 +1,53 @@
+<section class="panel note-panel" aria-labelledby="note-title">
+  <div class="panel-heading note-heading">
+    <div>
+      <p class="section-kicker">EVOLUCIÓN DEL PACIENTE</p>
+      <h2 id="note-title">Descripción clínica</h2>
+      <p class="panel-description">Escribe tus observaciones o dicta la información por voz.</p>
+    </div>
+    <span class="private-label">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 8V6a4.5 4.5 0 0 1 9 0v2m-10 0h11v9h-11V8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Nota de consulta
+    </span>
+  </div>
+
+  <label class="visually-hidden" for="clinical-note">Descripción clínica del paciente</label>
+  <textarea
+    id="clinical-note"
+    class="clinical-note"
+    [value]="texto()"
+    (input)="onNotaInput($event)"
+    placeholder="Describe los hallazgos, síntomas y observaciones de la consulta…">
+  </textarea>
+
+  <div class="note-footer">
+    <p class="voice-status" [class.recording]="grabando()" role="status" aria-live="polite">
+      @if (grabando()) {
+        <span class="recording-indicator"></span> Grabando voz… habla con claridad.
+      } @else {
+        {{ mensajeEstado() || 'El texto dictado se añadirá a la descripción existente.' }}
+      }
+    </p>
+    <div class="form-actions">
+      <button class="button button-secondary" type="button" (click)="alternarGrabacion()" [attr.aria-pressed]="grabando()">
+        @if (grabando()) {
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="2" fill="currentColor"/></svg>
+          Detener dictado
+        } @else {
+          <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="2.5" width="6" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5m-3 0h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          Grabar voz
+        }
+      </button>
+      <button class="button button-primary" type="button" (click)="finalizarNota()">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Finalizar consulta
+      </button>
+    </div>
+  </div>
+
+  @if (finalizada()) {
+    <p class="completion-message" role="status">
+      Registro preparado. Aún no se ha enviado ni guardado en un servidor.
+    </p>
+  }
+</section>

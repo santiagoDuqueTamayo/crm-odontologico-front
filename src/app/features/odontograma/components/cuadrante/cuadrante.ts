@@ -1,5 +1,12 @@
 import { Component, input, output } from '@angular/core';
 import { DienteGraficoComponent } from '../diente-grafico/diente-grafico';
+import { DienteData } from '../../models/odontograma.models';
+
+export type OrientacionCuadrante =
+  | 'superior-derecho'
+  | 'superior-izquierdo'
+  | 'inferior-derecho'
+  | 'inferior-izquierdo';
 
 @Component({
   selector: 'app-cuadrante',
@@ -9,10 +16,10 @@ import { DienteGraficoComponent } from '../diente-grafico/diente-grafico';
   styleUrl: './cuadrante.scss'
 })
 export class CuadranteComponent {
-  // Recibe la porción de dientes (ej. los 8 dientes superiores derechos)
-  dientes = input.required<any[]>();
+  dientes = input.required<DienteData[]>();
+  orientacion = input.required<OrientacionCuadrante>();
+  numeroSeleccionado = input<number | null>(null);
 
-  // Burbujeo de eventos hacia la grilla
   dienteClickeado = output<number>();
   caraClickeada = output<{numero: number, cara: string}>();
 }

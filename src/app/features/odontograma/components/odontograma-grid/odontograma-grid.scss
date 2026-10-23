@@ -1,15 +1,49 @@
 .grid-herradura {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 220px 220px;
-  border: 3px solid #000000;
-  background-color: #ffffff;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(140px, 1fr) minmax(140px, 1fr);
+  max-width: 950px;
+  min-width: 660px;
+  min-height: 290px;
+  margin: 0 auto;
+  padding: 4px 0;
 }
 
 .cuadrante {
-  border: 1px solid #000000;
   display: flex;
-  align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  min-width: 0;
+}
+
+.cuadrante.upper {
+  align-items: flex-end;
+  padding-bottom: 9px;
+}
+
+.cuadrante.lower {
+  align-items: flex-start;
+  padding-top: 9px;
+}
+
+.cuadrante:nth-child(odd) {
+  padding-right: 3px;
+}
+
+.cuadrante:nth-child(even) {
+  padding-left: 3px;
+}
+
+@media (max-width: 700px) {
+  .grid-herradura {
+    grid-template-rows: minmax(95px, 1fr) minmax(95px, 1fr);
+    min-height: 215px;
+  }
+
+  .cuadrante.upper {
+    padding-bottom: 5px;
+  }
+
+  .cuadrante.lower {
+    padding-top: 5px;
+  }
 }

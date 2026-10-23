@@ -1,0 +1,236 @@
+:host {
+  display: block;
+  --green-800: #17664f;
+  --green-700: #1e8062;
+  --muted: #6d8179;
+}
+
+.panel {
+  overflow: hidden;
+  border: 1px solid #e3ece7;
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(31, 76, 57, 0.045);
+}
+
+.note-panel {
+  padding-bottom: 19px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 23px 27px 15px;
+}
+
+.section-kicker {
+  margin: 0 0 6px;
+  color: var(--green-700);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+}
+
+h2 {
+  margin: 0 0 5px;
+  color: #123b30;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.panel-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.private-label {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #f2f7f4;
+  color: #61776d;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.private-label svg {
+  width: 16px;
+  height: 16px;
+  color: var(--green-700);
+}
+
+.clinical-note {
+  display: block;
+  width: calc(100% - 54px);
+  min-height: 142px;
+  margin: 0 27px;
+  padding: 15px 16px;
+  resize: vertical;
+  border: 1px solid #dfeae4;
+  border-radius: 10px;
+  outline: none;
+  background: #fcfefd;
+  color: #193b32;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.clinical-note::placeholder {
+  color: #9aa9a2;
+}
+
+.clinical-note:focus {
+  border-color: #63a88a;
+  box-shadow: 0 0 0 3px rgba(67, 151, 111, 0.12);
+}
+
+.note-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 27px 0;
+}
+
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.voice-status.recording {
+  color: #b34242;
+}
+
+.recording-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d64b4b;
+  box-shadow: 0 0 0 4px #fbe9e9;
+  animation: pulse 1.2s infinite;
+}
+
+.form-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.button {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:focus-visible {
+  outline: 3px solid rgba(54, 144, 101, 0.35);
+  outline-offset: 3px;
+}
+
+.button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.button-secondary {
+  border-color: #cfe2d7;
+  background: #fff;
+  color: var(--green-800);
+}
+
+.button-secondary:hover {
+  background: #f4faf6;
+}
+
+.button-primary {
+  background: var(--green-800);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(23, 102, 79, 0.15);
+}
+
+.button-primary:hover {
+  background: #12563f;
+  box-shadow: 0 6px 14px rgba(23, 102, 79, 0.2);
+}
+
+.completion-message {
+  margin: 13px 27px 0;
+  padding: 10px 12px;
+  border: 1px solid #d9ebdf;
+  border-radius: 8px;
+  background: #f4faf6;
+  color: #246b4c;
+  font-size: 11px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(214, 75, 75, 0.12);
+  }
+}
+
+@media (max-width: 700px) {
+  .panel-heading {
+    padding: 19px 18px 16px;
+  }
+
+  .clinical-note {
+    width: calc(100% - 36px);
+    margin: 0 18px;
+  }
+
+  .note-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 13px 18px 0;
+  }
+
+  .form-actions {
+    width: 100%;
+  }
+
+  .button {
+    flex: 1;
+    padding: 0 9px;
+  }
+}

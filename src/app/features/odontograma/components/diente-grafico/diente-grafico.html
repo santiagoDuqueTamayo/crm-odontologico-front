@@ -1,43 +1,42 @@
-<div class="diente-container" (click)="onDienteClick()">
-  <!-- Leemos el signal del número -->
+<button
+  class="diente-container"
+  [class.is-selected]="seleccionado()"
+  [attr.aria-label]="'Seleccionar diente ' + numeroDiente()"
+  [attr.aria-pressed]="seleccionado()"
+  type="button"
+  (click)="onDienteClick()">
   <span class="diente-numero">{{ numeroDiente() }}</span>
-  
-  <svg viewBox="0 0 100 100" class="diente-svg">
-    
-    <!-- Cara Vestibular (Arriba) -->
-    <polygon points="0,0 100,0 75,25 25,25"
-             [attr.fill]="caras().vestibular?.colorHex || '#FFFFFF'"
-             (click)="onCaraClick('vestibular', $event)">
-      <title>{{ caras().vestibular?.etiquetaVisual }}</title>
-    </polygon>
 
-    <!-- Cara Distal / Mesial (Derecha) -->
-    <polygon points="100,0 100,100 75,75 75,25"
-             [attr.fill]="caras().distal?.colorHex || '#FFFFFF'"
-             (click)="onCaraClick('distal', $event)">
-      <title>{{ caras().distal?.etiquetaVisual }}</title>
+  <svg viewBox="0 0 100 100" class="diente-svg" aria-hidden="true">
+    <polygon
+      points="0,0 100,0 75,25 25,25"
+      [attr.fill]="caras().vestibular.colorHex || '#ffffff'"
+      (click)="onCaraClick('vestibular', $event)">
+      <title>{{ caras().vestibular.etiquetaVisual }}</title>
     </polygon>
-
-    <!-- Cara Palatina / Lingual (Abajo) -->
-    <polygon points="0,100 100,100 75,75 25,75"
-             [attr.fill]="caras().palatino_lingual?.colorHex || '#FFFFFF'"
-             (click)="onCaraClick('palatino_lingual', $event)">
-      <title>{{ caras().palatino_lingual?.etiquetaVisual }}</title>
+    <polygon
+      points="100,0 100,100 75,75 75,25"
+      [attr.fill]="caras().distal.colorHex || '#ffffff'"
+      (click)="onCaraClick('distal', $event)">
+      <title>{{ caras().distal.etiquetaVisual }}</title>
     </polygon>
-
-    <!-- Cara Mesial / Distal (Izquierda) -->
-    <polygon points="0,0 0,100 25,75 25,25"
-             [attr.fill]="caras().mesial?.colorHex || '#FFFFFF'"
-             (click)="onCaraClick('mesial', $event)">
-      <title>{{ caras().mesial?.etiquetaVisual }}</title>
+    <polygon
+      points="0,100 100,100 75,75 25,75"
+      [attr.fill]="caras().palatino_lingual.colorHex || '#ffffff'"
+      (click)="onCaraClick('palatino_lingual', $event)">
+      <title>{{ caras().palatino_lingual.etiquetaVisual }}</title>
     </polygon>
-
-    <!-- Cara Oclusal / Incisal (Centro) -->
-    <polygon points="25,25 75,25 75,75 25,75"
-             [attr.fill]="caras().oclusal_incisal?.colorHex || '#FFFFFF'"
-             (click)="onCaraClick('oclusal_incisal', $event)">
-      <title>{{ caras().oclusal_incisal?.etiquetaVisual }}</title>
+    <polygon
+      points="0,0 0,100 25,75 25,25"
+      [attr.fill]="caras().mesial.colorHex || '#ffffff'"
+      (click)="onCaraClick('mesial', $event)">
+      <title>{{ caras().mesial.etiquetaVisual }}</title>
     </polygon>
-
+    <polygon
+      points="25,25 75,25 75,75 25,75"
+      [attr.fill]="caras().oclusal_incisal.colorHex || '#ffffff'"
+      (click)="onCaraClick('oclusal_incisal', $event)">
+      <title>{{ caras().oclusal_incisal.etiquetaVisual }}</title>
+    </polygon>
   </svg>
-</div>
+</button>
