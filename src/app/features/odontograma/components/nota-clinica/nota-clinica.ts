@@ -109,11 +109,7 @@ export class NotaClinicaComponent implements OnDestroy {
     } catch (error) {
       this.grabando.set(false);
       this.reconocimiento = null;
-      if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        this.mensajeEstado.set('No se concedió permiso para usar el micrófono.');
-        return;
-      }
-      throw error;
+      this.mensajeEstado.set(this.mensajeErrorInicio(error));
     }
   }
 
@@ -135,6 +131,33 @@ export class NotaClinicaComponent implements OnDestroy {
     if (error === 'no-speech') {
       return 'No se detectó voz. Puedes volver a intentarlo.';
     }
+    if (error === 'audio-capture') {
+      return 'No se encontró un micrófono disponible.';
+    }
+    if (error === 'network') {
+      return 'El servicio de reconocimiento no está disponible. Revisa tu conexión.';
+    }
+    if (error === 'language-not-supported') {
+      return 'El navegador no admite reconocimiento de voz en español de Colombia.';
+    }
+    if (error === 'aborted') {
+      return 'El dictado se detuvo antes de completar el reconocimiento.';
+    }
     return 'No fue posible completar el dictado. Inténtalo de nuevo.';
+  }
+
+  private mensajeErrorInicio(error: unknown): string {
+    if (error instanceof DOMException) {
+      if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+        return 'No se concedió permiso para usar el micrófono. Verifica también que estés en una conexión segura (HTTPS o localhost).';
+      }
+      if (error.name === 'InvalidStateError') {
+        return 'El reconocimiento de voz ya está en curso. Detén el dictado e inténtalo de nuevo.';
+      }
+      if (error.name === 'NotSupportedError') {
+        return 'Este navegador no admite el reconocimiento de voz requerido.';
+      }
+    }
+    return 'No se pudo iniciar el dictado. Verifica el permiso del micrófono e inténtalo de nuevo.';
   }
 }

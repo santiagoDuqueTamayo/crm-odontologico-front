@@ -17,8 +17,7 @@
     class="clinical-note"
     [value]="texto()"
     (input)="onNotaInput($event)"
-    placeholder="Describe los hallazgos, síntomas y observaciones de la consulta…">
-  </textarea>
+    placeholder="Describe los hallazgos, síntomas y observaciones de la consulta…"></textarea>
 
   <div class="note-footer">
     <p class="voice-status" [class.recording]="grabando()" role="status" aria-live="polite">

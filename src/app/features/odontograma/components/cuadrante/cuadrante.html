@@ -1,4 +1,9 @@
-<div class="cuadrante-fila" [class]="orientacion()">
+<div
+  class="cuadrante-fila"
+  [class.superior-derecho]="orientacion() === 'superior-derecho'"
+  [class.superior-izquierdo]="orientacion() === 'superior-izquierdo'"
+  [class.inferior-derecho]="orientacion() === 'inferior-derecho'"
+  [class.inferior-izquierdo]="orientacion() === 'inferior-izquierdo'">
   @for (diente of dientes(); track diente.numero) {
     <app-diente-grafico 
       [numeroDiente]="diente.numero"

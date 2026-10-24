@@ -22,4 +22,12 @@ describe('CuadranteComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should preserve the row layout class and apply the quadrant orientation', () => {
+    fixture.detectChanges();
+
+    const row = fixture.nativeElement.querySelector('.cuadrante-fila') as HTMLElement;
+    expect(row.classList.contains('cuadrante-fila')).toBe(true);
+    expect(row.classList.contains('superior-derecho')).toBe(true);
+  });
 });

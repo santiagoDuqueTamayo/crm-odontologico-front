@@ -26,6 +26,11 @@ describe('NotaClinicaComponent', () => {
     expect(onNotaCambiada).toHaveBeenCalledWith('Paciente presenta sensibilidad');
   });
 
+  it('should render the textarea without whitespace text nodes', () => {
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    expect(textarea.textContent).toBe('');
+  });
+
   it('should emit the complete note when the consultation is finalized', () => {
     const onFinalizar = vi.fn();
     component.finalizar.subscribe(onFinalizar);
