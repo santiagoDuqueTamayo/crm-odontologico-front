@@ -115,4 +115,15 @@ describe('OdontogramaViewComponent', () => {
     expect(tooth16Button?.classList.contains('has-finding')).toBe(true);
     expect(compiled.querySelector('#detalle-pieza-titulo')?.textContent).toContain('Primer molar superior derecho (Diente 16)');
   });
+
+  it('should load the demonstration response with several findings and two absent teeth', () => {
+    component.cargarOdontogramaMock();
+    fixture.detectChanges();
+
+    expect(component.dientes().filter((diente) => diente.estadoGeneral.estado === 'Ausente')).toHaveLength(2);
+    expect(component.dientes().find((diente) => diente.numero === 16)?.caras.vestibular.estado).toBe('Caries');
+    expect(component.dientes().find((diente) => diente.numero === 14)?.caras.distal.estado).toBe('Restaurado');
+    expect(component.dientes().filter((diente) => diente.estadoGeneral.estado === 'Sano')).toHaveLength(23);
+    expect(component.consultaFinalizada()).toBe(true);
+  });
 });

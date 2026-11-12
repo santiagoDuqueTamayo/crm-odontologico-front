@@ -509,9 +509,6 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     }
 
     const color = new three.Color(hexElegido);
-    if (this.caraSeleccionada() === face) {
-      color.lerp(new three.Color('#55a978'), 0.4);
-    }
     return color;
   }
 

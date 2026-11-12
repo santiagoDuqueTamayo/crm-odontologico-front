@@ -10,6 +10,7 @@ import {
   DienteData,
   OdontogramaUpdateResponse
 } from '../models/odontograma.models';
+import { ODONTOGRAMA_RESPUESTA_MOCK } from '../models/odontograma-mock';
 import { OdontogramaApiService } from '../services/odontograma-api.service';
 
 @Component({
@@ -63,6 +64,15 @@ export class OdontogramaViewComponent {
   onCaraSeleccionada(cara: CaraDienteId): void {
     this.caraSeleccionada.set(cara);
     this.consultaFinalizada.set(false);
+  }
+
+  cargarOdontogramaMock(): void {
+    this.errorDictado.set(null);
+    this.aplicarRespuestaBackend(ODONTOGRAMA_RESPUESTA_MOCK);
+    this.resumenActualizacion.set(
+      'Datos de prueba cargados: 9 dientes con estados variados y 2 piezas ausentes.'
+    );
+    this.consultaFinalizada.set(true);
   }
 
   onNotaCambiada(nota: string): void {

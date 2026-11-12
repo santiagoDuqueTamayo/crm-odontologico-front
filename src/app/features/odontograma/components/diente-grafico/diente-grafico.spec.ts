@@ -28,4 +28,42 @@ describe('DienteGraficoComponent', () => {
     expect(fixture.nativeElement.querySelector('.corona')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[role="button"]')).toBeNull();
   });
+
+  it('should mark a tooth with a non-healthy general state in red', () => {
+    fixture.componentRef.setInput('diente', {
+      numero: 11,
+      nombreColoquial: 'Diente 11',
+      estadoGeneral: { estado: 'Restaurado', colorHex: '#3B82F6' },
+      caras: {
+        mesial: { etiquetaVisual: 'Mesial', estado: 'Sano', colorHex: null },
+        distal: { etiquetaVisual: 'Distal', estado: 'Sano', colorHex: null },
+        vestibular: { etiquetaVisual: 'Vestibular', estado: 'Sano', colorHex: null },
+        palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Sano', colorHex: null },
+        oclusal_incisal: { etiquetaVisual: 'Incisal', estado: 'Sano', colorHex: null }
+      }
+    });
+
+    expect(component.colorHallazgo()).toBe('#EF4444');
+  });
+
+  it('should not mark healthy or unspecified general states in red', () => {
+    const caras = {
+      mesial: { etiquetaVisual: 'Mesial', estado: 'Sano', colorHex: null },
+      distal: { etiquetaVisual: 'Distal', estado: 'Sano', colorHex: null },
+      vestibular: { etiquetaVisual: 'Vestibular', estado: 'Sano', colorHex: null },
+      palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Sano', colorHex: null },
+      oclusal_incisal: { etiquetaVisual: 'Incisal', estado: 'Sano', colorHex: null }
+    };
+
+    for (const estado of ['Sano', 'Presente', '']) {
+      fixture.componentRef.setInput('diente', {
+        numero: 11,
+        nombreColoquial: 'Diente 11',
+        estadoGeneral: { estado, colorHex: null },
+        caras
+      });
+
+      expect(component.colorHallazgo()).toBeNull();
+    }
+  });
 });

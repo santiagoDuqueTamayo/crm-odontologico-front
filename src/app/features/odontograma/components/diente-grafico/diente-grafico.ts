@@ -163,7 +163,7 @@ export class DienteGraficoComponent {
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
 
     if (!this.esEstadoSanoOPresente(estadoGeneral)) {
-      return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
+      return '#EF4444';
     }
 
     const hallazgos = this.carasConHallazgo();
