@@ -68,8 +68,7 @@ export class NotaClinicaComponent implements OnDestroy {
       }
 
       this.flujoMicrofono = flujo;
-      const mimeType = this.tipoAudioCompatible();
-      const grabadora = new MediaRecorder(flujo, mimeType ? { mimeType } : undefined);
+      const grabadora = this.crearGrabadora(flujo);
       this.grabadora = grabadora;
       this.fragmentosAudio = [];
 
@@ -139,8 +138,20 @@ export class NotaClinicaComponent implements OnDestroy {
     this.grabadora = null;
   }
 
+  private crearGrabadora(flujo: MediaStream): MediaRecorder {
+    const mimeType = this.tipoAudioCompatible();
+    if (mimeType) {
+      try {
+        return new MediaRecorder(flujo, { mimeType });
+      } catch {
+        // Fallback al contenedor por defecto del navegador
+      }
+    }
+    return new MediaRecorder(flujo);
+  }
+
   private tipoAudioCompatible(): string | null {
-    const formatos = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'];
+    const formatos = ['audio/webm', 'audio/ogg', 'audio/mp4'];
     return formatos.find((formato) => MediaRecorder.isTypeSupported(formato)) ?? null;
   }
 
@@ -171,10 +182,13 @@ export class NotaClinicaComponent implements OnDestroy {
   private mensajeErrorInicio(error: unknown): string {
     if (error instanceof DOMException) {
       if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
-        return 'No se concedió permiso para usar el micrófono. Verifica también que estés en una conexión segura (HTTPS o localhost).';
+        return 'No se concedió permiso para usar el micrófono. Haz clic en el ícono de permisos junto a la barra de direcciones para permitir el micrófono.';
       }
       if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-        return 'No se encontró un micrófono disponible.';
+        return 'No se encontró un micrófono disponible o habilitado en el sistema.';
+      }
+      if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        return 'El micrófono está siendo utilizado por otra aplicación o el controlador de audio falló.';
       }
     }
     return 'No se pudo iniciar el dictado. Verifica el permiso del micrófono e inténtalo de nuevo.';

@@ -2,12 +2,13 @@
   position: relative;
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr) 1px minmax(0, 1fr);
-  grid-template-rows: repeat(2, minmax(130px, 1fr));
+  grid-template-rows: repeat(2, minmax(170px, 1fr));
+  row-gap: 12px;
   max-width: 1080px;
   min-width: 780px;
-  min-height: 300px;
+  min-height: 360px;
   margin: 0 auto;
-  padding: 12px 8px;
+  padding: 14px 8px;
 }
 
 .arcada-label {
@@ -71,8 +72,8 @@
 
 @media (max-width: 700px) {
   .grid-herradura {
-    grid-template-rows: repeat(2, minmax(120px, 1fr));
-    min-height: 250px;
+    grid-template-rows: repeat(2, minmax(148px, 1fr));
+    min-height: 310px;
     padding: 8px 4px;
   }
 }

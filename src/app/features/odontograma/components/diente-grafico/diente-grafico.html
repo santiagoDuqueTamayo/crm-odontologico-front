@@ -42,15 +42,59 @@
     }
   </svg>
 
-  @if (carasConHallazgo().length > 0 && !esAusenteOExtraido()) {
-    <span class="hallazgos-dots" aria-hidden="true">
-      @for (cara of carasConHallazgo(); track cara.id) {
-        <i class="hallazgo-dot" [style.background-color]="cara.colorHex" [title]="cara.etiqueta + ': ' + cara.estado"></i>
-      }
-    </span>
-  }
-
   @if (numeroDiente() >= 30) {
     <span class="diente-numero">{{ numeroDiente() }}</span>
   }
+
+  <!-- Diagrama circular de las 5 caras (Arriba=Vestibular, Abajo=Palatino/Lingual, Izq=Mesial, Der=Distal, Centro=Oclusal/Incisal) -->
+  <svg
+    viewBox="0 0 100 100"
+    class="diagrama-circular-svg"
+    aria-hidden="true">
+    <!-- Arriba: Vestibular -->
+    <path
+      class="sector-cara sector-vestibular"
+      d="M 18.89 18.89 A 44 44 0 0 1 81.11 18.89 L 62.73 37.27 A 18 18 0 0 0 37.27 37.27 Z"
+      [attr.fill]="colorCaraCirculo('vestibular')">
+      <title>{{ tituloCaraCirculo('vestibular') }}</title>
+    </path>
+
+    <!-- Derecha: Distal -->
+    <path
+      class="sector-cara sector-distal"
+      d="M 81.11 18.89 A 44 44 0 0 1 81.11 81.11 L 62.73 62.73 A 18 18 0 0 0 62.73 37.27 Z"
+      [attr.fill]="colorCaraCirculo('distal')">
+      <title>{{ tituloCaraCirculo('distal') }}</title>
+    </path>
+
+    <!-- Abajo: Palatino / Lingual -->
+    <path
+      class="sector-cara sector-palatino-lingual"
+      d="M 81.11 81.11 A 44 44 0 0 1 18.89 81.11 L 37.27 62.73 A 18 18 0 0 0 62.73 62.73 Z"
+      [attr.fill]="colorCaraCirculo('palatino_lingual')">
+      <title>{{ tituloCaraCirculo('palatino_lingual') }}</title>
+    </path>
+
+    <!-- Izquierda: Mesial -->
+    <path
+      class="sector-cara sector-mesial"
+      d="M 18.89 81.11 A 44 44 0 0 1 18.89 18.89 L 37.27 37.27 A 18 18 0 0 0 37.27 62.73 Z"
+      [attr.fill]="colorCaraCirculo('mesial')">
+      <title>{{ tituloCaraCirculo('mesial') }}</title>
+    </path>
+
+    <!-- Centro: Oclusal / Incisal -->
+    <circle
+      class="sector-cara sector-oclusal-incisal"
+      cx="50"
+      cy="50"
+      r="18"
+      [attr.fill]="colorCaraCirculo('oclusal_incisal')">
+      <title>{{ tituloCaraCirculo('oclusal_incisal') }}</title>
+    </circle>
+
+    @if (esAusenteOExtraido()) {
+      <path class="marca-ausente-circulo" d="M 24 24 L 76 76 M 76 24 L 24 76" />
+    }
+  </svg>
 </button>

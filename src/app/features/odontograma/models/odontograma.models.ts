@@ -6,16 +6,25 @@
  */
 export type EstadoClinico = 
   | 'Sano' 
+  | 'Presente'
+  | 'Sellante'
   | 'Caries' 
-  | 'Restaurado' 
   | 'Fracturado' 
+  | 'Desgaste/Abfracción'
+  | 'Rest. Defectuosa'
+  | 'Restaurado' 
+  | 'Obturación Temporal'
+  | 'Endodoncia'
+  | 'Núcleo/Poste'
+  | 'Corona' 
+  | 'Póntico'
+  | 'Prótesis Removible'
+  | 'Implante'
   | 'Ausente' 
   | 'Extraído' 
+  | 'Resto Radicular'
   | 'Retenido'
-  | 'Corona' 
-  | 'Implante'
-  | 'Sellante'
-  | 'Presente'; // Estado por defecto general
+  | 'En Erupción';
 
 export type GrupoDental = 'ANTERIOR' | 'POSTERIOR';
 export type ArcadaDental = 'SUPERIOR' | 'INFERIOR';

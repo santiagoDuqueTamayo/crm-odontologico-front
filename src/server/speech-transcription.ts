@@ -1,4 +1,6 @@
 import express, { type ErrorRequestHandler, type Express } from 'express';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const GROQ_TRANSCRIPTION_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const GROQ_TRANSCRIPTION_MODEL = 'whisper-large-v3';
@@ -12,13 +14,47 @@ const ALLOWED_AUDIO_TYPES = new Set([
   'audio/x-m4a'
 ]);
 
+function resolveGroqApiKey(): string | undefined {
+  const fromEnv = process.env['GROQ_API_KEY']?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  const candidatePaths = [
+    resolve(process.cwd(), '.env'),
+    resolve(process.cwd(), 'src/app/features/odontograma/models/.env')
+  ];
+
+  for (const envPath of candidatePaths) {
+    if (!existsSync(envPath)) continue;
+    try {
+      const content = readFileSync(envPath, 'utf8');
+      for (const rawLine of content.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        const match = /^GROQ_API_KEY\s*=\s*(.+)$/.exec(line);
+        if (match?.[1]) {
+          const key = match[1].trim().replace(/^['"]|['"]$/g, '');
+          if (key) {
+            process.env['GROQ_API_KEY'] = key;
+            return key;
+          }
+        }
+      }
+    } catch {
+      // Ignorar errores de lectura de archivo local
+    }
+  }
+  return undefined;
+}
+
 export interface TranscriptionProvider {
   transcribir(audio: Buffer, mimeType: string): Promise<string>;
 }
 
 export class GroqTranscriptionProvider implements TranscriptionProvider {
   async transcribir(audio: Buffer, mimeType: string): Promise<string> {
-    const apiKey = process.env['GROQ_API_KEY'];
+    const apiKey = resolveGroqApiKey();
     if (!apiKey) {
       throw new Error('Falta configurar GROQ_API_KEY en el servidor.');
     }
@@ -34,7 +70,7 @@ export class GroqTranscriptionProvider implements TranscriptionProvider {
     formData.append('language', 'es');
     formData.append(
       'prompt',
-      'Transcribe en español de Colombia nombres propios, números de documento y teléfono, dirección, edad, género, correo, ocupación, aseguradora, contacto de emergencia, alergias, medicamentos y antecedentes médicos u odontológicos.'
+      'Transcribe en español de Colombia dictados odontológicos (diente, cuadrante, oclusal, incisal, mesial, distal, vestibular, palatino, lingual, sano, caries, resina, amalgama, restaurado, fracturado, ausente, extraído, retenido, corona, implante, sellante, ICDAS, abfracción, abrasión, atrición, erosión, endodoncia) y datos del paciente (nombres, documento, teléfono, dirección, edad, género, correo, ocupación, aseguradora, contacto de emergencia, alergias, medicamentos y antecedentes).'
     );
     formData.append('response_format', 'json');
 

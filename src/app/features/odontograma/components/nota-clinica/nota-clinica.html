@@ -67,6 +67,11 @@
         }
       </div>
     } @else {
+      @if (mensajeEstado()) {
+        <p class="error-message" role="alert">
+          {{ mensajeEstado() }}
+        </p>
+      }
       <label class="visually-hidden" for="clinical-note-result">Resultado del dictado de voz</label>
       <textarea
         id="clinical-note-result"

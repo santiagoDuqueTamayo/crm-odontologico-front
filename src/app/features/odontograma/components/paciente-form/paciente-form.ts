@@ -137,7 +137,7 @@ export class PacienteFormComponent implements OnDestroy {
   }
 
   private tipoAudioCompatible(): string | null {
-    const formatos = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'];
+    const formatos = ['audio/webm', 'audio/ogg', 'audio/mp4'];
     return formatos.find((formato) => MediaRecorder.isTypeSupported(formato)) ?? null;
   }
 

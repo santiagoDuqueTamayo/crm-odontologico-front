@@ -8,12 +8,12 @@
   display: flex;
   width: 100%;
   min-width: 0;
-  min-height: 116px;
+  min-height: 152px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 3px 1px;
+  gap: 4px;
+  padding: 4px 1px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
@@ -42,8 +42,8 @@
 
 .diente-svg {
   display: block;
-  width: min(100%, 48px);
-  height: 88px;
+  width: min(100%, 46px);
+  height: 82px;
   overflow: visible;
   filter: drop-shadow(0 1px 1px rgba(65, 27, 33, 0.15));
 }
@@ -69,8 +69,33 @@
   opacity: 0.9;
 }
 
-.upper-tooth .diente-svg {
-  transform: rotate(180deg);
+.upper-tooth {
+  .diente-numero {
+    order: 1;
+  }
+
+  .diente-svg {
+    order: 2;
+    transform: rotate(180deg);
+  }
+
+  .diagrama-circular-svg {
+    order: 3;
+  }
+}
+
+.lower-tooth {
+  .diagrama-circular-svg {
+    order: 1;
+  }
+
+  .diente-svg {
+    order: 2;
+  }
+
+  .diente-numero {
+    order: 3;
+  }
 }
 
 .is-selected .corona {
@@ -79,9 +104,14 @@
 }
 
 .has-finding .corona {
-  fill: color-mix(in srgb, var(--finding-color, #fff0cf) 38%, #fffef9);
+  fill: color-mix(in srgb, var(--finding-color, #fff0cf) 45%, #fffef9);
   stroke: var(--finding-color, #d97706);
   stroke-width: 2.8;
+}
+
+.has-finding .raiz {
+  fill: color-mix(in srgb, var(--finding-color, #fff0cf) 22%, #f7f3e8);
+  stroke: color-mix(in srgb, var(--finding-color, #b7a99a) 70%, #b7a99a);
 }
 
 .is-absent .raiz,
@@ -97,31 +127,52 @@
   stroke-linecap: round;
 }
 
-.hallazgos-dots {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  min-height: 6px;
+.diagrama-circular-svg {
+  display: block;
+  width: clamp(28px, 3vw, 36px);
+  height: clamp(28px, 3vw, 36px);
+  flex-shrink: 0;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px rgba(35, 75, 59, 0.12));
 }
 
-.hallazgo-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+.sector-cara {
+  stroke: #b7a99a;
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+  transition: fill 160ms ease, stroke 160ms ease, opacity 160ms ease;
+}
+
+.is-selected .sector-cara {
+  stroke: #38835c;
+  stroke-width: 3;
+}
+
+.is-absent .sector-cara {
+  opacity: 0.5;
+}
+
+.marca-ausente-circulo {
+  fill: none;
+  stroke: var(--finding-color, #475569);
+  stroke-width: 5;
+  stroke-linecap: round;
+  pointer-events: none;
 }
 
 @media (max-width: 700px) {
   .diente-container {
-    min-height: 102px;
-    gap: 2px;
+    min-height: 132px;
+    gap: 3px;
   }
 
   .diente-svg {
-    width: min(100%, 40px);
-    height: 78px;
+    width: min(100%, 38px);
+    height: 72px;
+  }
+
+  .diagrama-circular-svg {
+    width: 26px;
+    height: 26px;
   }
 }

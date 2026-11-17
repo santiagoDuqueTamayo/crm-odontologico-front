@@ -178,28 +178,25 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
 
   colorCaraSvg(face: CaraDienteId): string {
     const cara = this.diente().caras[face];
-    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa']);
-    if (cara?.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
+    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+    if (cara && !this.esEstadoSanoOPresente(cara.estado) && cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
       return cara.colorHex;
     }
-    if (!cara || this.esEstadoSanoOPresente(cara.estado)) {
-      const estadoGeneral = this.diente().estadoGeneral;
-      if (estadoGeneral && !this.esEstadoSanoOPresente(estadoGeneral.estado) && estadoGeneral.colorHex) {
-        return estadoGeneral.colorHex;
-      }
-      return '#fffdf5';
+    const estadoGeneral = this.diente().estadoGeneral;
+    if (estadoGeneral && !this.esEstadoSanoOPresente(estadoGeneral.estado) && estadoGeneral.colorHex) {
+      return estadoGeneral.colorHex;
     }
-    return cara.colorHex || '#fff0cf';
+    return '#fffdf5';
   }
 
   colorBadgeCara(face: CaraDienteId): string | null {
     const cara = this.diente().caras[face];
-    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa']);
-    if (cara?.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
-      return cara.colorHex;
-    }
+    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
     if (!cara || this.esEstadoSanoOPresente(cara.estado)) {
       return null;
+    }
+    if (cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
+      return cara.colorHex;
     }
     return cara.colorHex;
   }
@@ -492,15 +489,16 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     const cara = this.diente().caras[face];
     const esSana = this.esEstadoSanoOPresente(cara?.estado);
     const clinicalColor = cara?.colorHex?.toLowerCase();
-    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa']);
+    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
 
     let hexElegido = '#e9ddc6';
-    if (clinicalColor && !coloresNeutros.has(clinicalColor)) {
+    if (!esSana && clinicalColor && !coloresNeutros.has(clinicalColor)) {
       hexElegido = clinicalColor;
     } else if (esSana) {
       const estadoGeneral = this.diente().estadoGeneral;
       if (
         estadoGeneral &&
+        !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
         estadoGeneral.colorHex &&
         !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
       ) {
