@@ -74,6 +74,38 @@ describe('DetallePiezaComponent', () => {
     expect(fixture.nativeElement.querySelector('#detalle-pieza-titulo')?.textContent).toContain('Diente 26');
     expect(fixture.nativeElement.querySelector('.estado-general')?.textContent).toContain('Restaurado');
   });
+
+  it('should separate root and crown coloring for root-only, surface-only, and full-tooth states', () => {
+    const component = fixture.componentInstance;
+
+    // 1. Solo una cara afectada (Vestibular con Caries): solo pinta esa cara, no las demás ni la raíz
+    expect(component.colorCaraSvg('vestibular')).toBe('#fca5a5');
+    expect(component.colorCaraSvg('distal')).toBe('#fffdf5');
+    expect(component.colorRaizSvg()).toBe('#f5f0e5');
+
+    // 2. Solo raíz afectada (Fractura Radicular): pinta solo la raíz, las caras quedan neutras
+    const dienteRaiz = crearDiente(21);
+    dienteRaiz.estadoGeneral = { estado: 'Fractura Radicular', colorHex: '#B91C1C' };
+    dienteRaiz.caras.vestibular = { etiquetaVisual: 'Vestibular', estado: 'Sano', colorHex: '#22C55E' };
+    fixture.componentRef.setInput('diente', dienteRaiz);
+    fixture.detectChanges();
+
+    expect(component.colorRaizSvg()).toBe('#B91C1C');
+    expect(component.colorCaraSvg('vestibular')).toBe('#fffdf5');
+    expect(component.colorCaraSvg('oclusal_incisal')).toBe('#fffdf5');
+
+    // 3. Diente completo (Endodoncia): pinta tanto la raíz como todas las caras
+    const dienteCompleto = crearDiente(24);
+    dienteCompleto.estadoGeneral = { estado: 'Endodoncia', colorHex: '#D946EF' };
+    dienteCompleto.caras.vestibular = { etiquetaVisual: 'Vestibular', estado: 'Endodoncia', colorHex: '#D946EF' };
+    dienteCompleto.caras.distal = { etiquetaVisual: 'Distal', estado: 'Endodoncia', colorHex: '#D946EF' };
+    fixture.componentRef.setInput('diente', dienteCompleto);
+    fixture.detectChanges();
+
+    expect(component.colorRaizSvg()).toBe('#D946EF');
+    expect(component.colorCaraSvg('vestibular')).toBe('#D946EF');
+    expect(component.colorCaraSvg('distal')).toBe('#D946EF');
+  });
 });
 
 function crearDiente(numero = 11): DienteData {

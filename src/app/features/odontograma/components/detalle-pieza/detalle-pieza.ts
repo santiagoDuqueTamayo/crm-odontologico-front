@@ -17,6 +17,41 @@ import { CarasDiente, DienteData } from '../../models/odontograma.models';
 import type * as THREE from 'three';
 
 export type CaraDienteId = keyof CarasDiente;
+type TipoParte3d = 'corona' | 'raiz';
+
+const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set<string>([
+  'apicectomía',
+  'apicectomia',
+  'lesión periapical',
+  'lesion periapical',
+  'fractura radicular',
+  'perforación radicular',
+  'perforacion radicular',
+  'lesión de furca',
+  'lesion de furca',
+  'recesión gingival',
+  'recesion gingival',
+  'cálculo subgingival',
+  'calculo subgingival',
+  'reabsorción radicular',
+  'reabsorcion radicular',
+  'anomalía radicular',
+  'anomalia radicular',
+  'resto radicular'
+]);
+
+const ESTADOS_DIENTE_COMPLETO_CON_RAIZ = new Set<string>([
+  'endodoncia',
+  'núcleo/poste',
+  'nucleo/poste',
+  'implante',
+  'ausente',
+  'extraído',
+  'extraido',
+  'retenido',
+  'en erupción',
+  'en erupcion'
+]);
 
 @Component({
   selector: 'app-detalle-pieza',
@@ -179,20 +214,46 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   colorCaraSvg(face: CaraDienteId): string {
     const cara = this.diente().caras[face];
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
-    if (cara && !this.esEstadoSanoOPresente(cara.estado) && cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
+    if (
+      cara &&
+      !this.esEstadoSanoOPresente(cara.estado) &&
+      !this.esEstadoExclusivoDeRaiz(cara.estado) &&
+      cara.colorHex &&
+      !coloresNeutros.has(cara.colorHex.toLowerCase())
+    ) {
       return cara.colorHex;
     }
     const estadoGeneral = this.diente().estadoGeneral;
-    if (estadoGeneral && !this.esEstadoSanoOPresente(estadoGeneral.estado) && estadoGeneral.colorHex) {
+    if (
+      estadoGeneral &&
+      !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
+      !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
+      estadoGeneral.colorHex &&
+      !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
+    ) {
       return estadoGeneral.colorHex;
     }
     return '#fffdf5';
   }
 
+  colorRaizSvg(): string {
+    const estadoGeneral = this.diente().estadoGeneral;
+    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+    if (
+      estadoGeneral &&
+      this.afectaRaiz(estadoGeneral.estado) &&
+      estadoGeneral.colorHex &&
+      !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
+    ) {
+      return estadoGeneral.colorHex;
+    }
+    return '#f5f0e5';
+  }
+
   colorBadgeCara(face: CaraDienteId): string | null {
     const cara = this.diente().caras[face];
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
-    if (!cara || this.esEstadoSanoOPresente(cara.estado)) {
+    if (!cara || this.esEstadoSanoOPresente(cara.estado) || this.esEstadoExclusivoDeRaiz(cara.estado)) {
       return null;
     }
     if (cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
@@ -252,13 +313,24 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     return norm === 'sano' || norm === 'presente';
   }
 
+  private esEstadoExclusivoDeRaiz(estado: string | null | undefined): boolean {
+    if (!estado) return false;
+    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(estado.trim().toLowerCase());
+  }
+
+  private afectaRaiz(estado: string | null | undefined): boolean {
+    if (!estado) return false;
+    const norm = estado.trim().toLowerCase();
+    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
+  }
+
   private crearDiente3d(): void {
     const three = this.three;
     if (!this.toothGroup || !this.regionLines || !three) return;
 
     const numero = this.diente().numero;
     const ultimoDigito = numero % 10;
-    this.agregarParte(this.crearGeometriaCorona(three, numero));
+    this.agregarParte(this.crearGeometriaCorona(three, numero), 'corona');
     this.crearLineasRegionales(three, numero);
 
     const rootPositions = ultimoDigito >= 6
@@ -275,7 +347,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
         new three.Quaternion().setFromEuler(new three.Euler(0, 0, lean)),
         new three.Vector3(1, 1, 1)
       ));
-      this.agregarParte(rootGeometry);
+      this.agregarParte(rootGeometry, 'raiz');
     });
     this.numeroModelo.set(numero);
   }
@@ -431,7 +503,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     this.numeroModelo.set(null);
   }
 
-  private agregarParte(geometry: THREE.BufferGeometry): void {
+  private agregarParte(geometry: THREE.BufferGeometry, tipoParte: TipoParte3d): void {
     const three = this.three;
     if (!this.toothGroup || !three) return;
 
@@ -440,10 +512,12 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     const colors = new Float32Array(position.count * 3);
 
     for (let index = 0; index < position.count; index++) {
-      const color = this.colorSuperficie(
-        this.superficieEn(new three.Vector3().fromBufferAttribute(position, index)),
-        three
-      );
+      const color = tipoParte === 'raiz'
+        ? this.colorRaiz3d(three)
+        : this.colorSuperficie(
+            this.superficieEn(new three.Vector3().fromBufferAttribute(position, index)),
+            three
+          );
       colors[index * 3] = color.r;
       colors[index * 3 + 1] = color.g;
       colors[index * 3 + 2] = color.b;
@@ -456,7 +530,9 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
       metalness: 0
     });
     this.materiales.push(material);
-    this.toothGroup.add(new three.Mesh(geometry, material));
+    const mesh = new three.Mesh(geometry, material);
+    mesh.userData = { tipoParte };
+    this.toothGroup.add(mesh);
   }
 
   private seleccionarSuperficie(event: PointerEvent): void {
@@ -470,7 +546,10 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     );
     const raycaster = new three.Raycaster();
     raycaster.setFromCamera(pointer, this.camera);
-    const [hit] = raycaster.intersectObjects(this.toothGroup.children, false);
+    const crownMeshes = this.toothGroup.children.filter(
+      (child) => child.userData?.['tipoParte'] === 'corona'
+    );
+    const [hit] = raycaster.intersectObjects(crownMeshes, false);
     if (!hit) return;
 
     const localPoint = this.toothGroup.worldToLocal(hit.point.clone());
@@ -487,7 +566,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
 
   private colorSuperficie(face: CaraDienteId, three: typeof import('three')): THREE.Color {
     const cara = this.diente().caras[face];
-    const esSana = this.esEstadoSanoOPresente(cara?.estado);
+    const esSana = this.esEstadoSanoOPresente(cara?.estado) || this.esEstadoExclusivoDeRaiz(cara?.estado);
     const clinicalColor = cara?.colorHex?.toLowerCase();
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
 
@@ -499,6 +578,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
       if (
         estadoGeneral &&
         !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
+        !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
         estadoGeneral.colorHex &&
         !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
       ) {
@@ -513,21 +593,45 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     return color;
   }
 
+  private colorRaiz3d(three: typeof import('three')): THREE.Color {
+    const estadoGeneral = this.diente().estadoGeneral;
+    const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+
+    if (
+      estadoGeneral &&
+      this.afectaRaiz(estadoGeneral.estado) &&
+      estadoGeneral.colorHex &&
+      !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
+    ) {
+      return new three.Color(estadoGeneral.colorHex);
+    }
+
+    return new three.Color('#e2d5bc');
+  }
+
   private actualizarColores(): void {
     const three = this.three;
     if (!this.toothGroup || !three) return;
 
     this.toothGroup.children.forEach((child) => {
       if (!(child instanceof three.Mesh)) return;
+      const tipoParte: TipoParte3d = child.userData?.['tipoParte'] === 'raiz' ? 'raiz' : 'corona';
       const position = child.geometry.getAttribute('position') as THREE.BufferAttribute;
       const colors = child.geometry.getAttribute('color') as THREE.BufferAttribute;
 
-      for (let index = 0; index < position.count; index++) {
-        const color = this.colorSuperficie(
-          this.superficieEn(new three.Vector3().fromBufferAttribute(position, index)),
-          three
-        );
-        colors.setXYZ(index, color.r, color.g, color.b);
+      if (tipoParte === 'raiz') {
+        const rootColor = this.colorRaiz3d(three);
+        for (let index = 0; index < position.count; index++) {
+          colors.setXYZ(index, rootColor.r, rootColor.g, rootColor.b);
+        }
+      } else {
+        for (let index = 0; index < position.count; index++) {
+          const color = this.colorSuperficie(
+            this.superficieEn(new three.Vector3().fromBufferAttribute(position, index)),
+            three
+          );
+          colors.setXYZ(index, color.r, color.g, color.b);
+        }
       }
       colors.needsUpdate = true;
     });
