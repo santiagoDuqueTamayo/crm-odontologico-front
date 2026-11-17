@@ -103,15 +103,18 @@
   stroke-width: 3;
 }
 
-.has-finding .corona {
-  fill: color-mix(in srgb, var(--finding-color, #fff0cf) 45%, #fffef9);
-  stroke: var(--finding-color, #d97706);
+/* Solo pinta la parte baja/visible del diente (.corona) cuando corresponde al diente/corona */
+.has-crown-finding .corona {
+  fill: color-mix(in srgb, var(--crown-color, #fff0cf) 48%, #fffef9);
+  stroke: var(--crown-color, #d97706);
   stroke-width: 2.8;
 }
 
-.has-finding .raiz {
-  fill: color-mix(in srgb, var(--finding-color, #fff0cf) 22%, #f7f3e8);
-  stroke: color-mix(in srgb, var(--finding-color, #b7a99a) 70%, #b7a99a);
+/* Solo pinta la parte alargada (.raiz) cuando la lesión afecta a la raíz */
+.has-root-finding .raiz {
+  fill: color-mix(in srgb, var(--root-color, #fff0cf) 52%, #f7f3e8);
+  stroke: var(--root-color, #b91c1c);
+  stroke-width: 2.8;
 }
 
 .is-absent .raiz,

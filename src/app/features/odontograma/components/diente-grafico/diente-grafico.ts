@@ -27,6 +27,24 @@ const COLORES_POR_ESTADO: Record<string, string> = {
   endodoncia: '#D946EF',
   'núcleo/poste': '#8B5CF6',
   'nucleo/poste': '#8B5CF6',
+  'apicectomía': '#C026D3',
+  apicectomia: '#C026D3',
+  'lesión periapical': '#991B1B',
+  'lesion periapical': '#991B1B',
+  'fractura radicular': '#B91C1C',
+  'perforación radicular': '#BE123C',
+  'perforacion radicular': '#BE123C',
+  'lesión de furca': '#B45309',
+  'lesion de furca': '#B45309',
+  'recesión gingival': '#D97706',
+  'recesion gingival': '#D97706',
+  'cálculo subgingival': '#92400E',
+  'calculo subgingival': '#92400E',
+  'reabsorción radicular': '#7C2D12',
+  'reabsorcion radicular': '#7C2D12',
+  'anomalía radicular': '#0369A1',
+  'anomalia radicular': '#0369A1',
+  'resto radicular': '#78716C',
   corona: '#EAB308',
   'póntico': '#FBBF24',
   pontico: '#FBBF24',
@@ -36,15 +54,55 @@ const COLORES_POR_ESTADO: Record<string, string> = {
   ausente: '#6B7280',
   'extraído': '#64748B',
   extraido: '#64748B',
-  'resto radicular': '#78716C',
   retenido: '#A855F7',
   'en erupción': '#84CC16',
   'en erupcion': '#84CC16'
 };
 
 /**
- * Prioridad clínica para determinar el estado/color predominante en la figura del diente
- * cuando varias caras presentan distintos hallazgos (Patologías > Tratamientos > Prevención > Sano).
+ * Estados que afectan EXCLUSIVAMENTE a la raíz del diente (.raiz),
+ * sin pintar la parte baja/visible del diente (.corona) ni el círculo de 5 caras.
+ */
+const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set<string>([
+  'apicectomía',
+  'apicectomia',
+  'lesión periapical',
+  'lesion periapical',
+  'fractura radicular',
+  'perforación radicular',
+  'perforacion radicular',
+  'lesión de furca',
+  'lesion de furca',
+  'recesión gingival',
+  'recesion gingival',
+  'cálculo subgingival',
+  'calculo subgingival',
+  'reabsorción radicular',
+  'reabsorcion radicular',
+  'anomalía radicular',
+  'anomalia radicular',
+  'resto radicular'
+]);
+
+/**
+ * Estados de diente completo que involucran tanto la raíz (.raiz) como la corona (.corona) y las caras.
+ */
+const ESTADOS_DIENTE_COMPLETO_CON_RAIZ = new Set<string>([
+  'endodoncia',
+  'núcleo/poste',
+  'nucleo/poste',
+  'implante',
+  'ausente',
+  'extraído',
+  'extraido',
+  'retenido',
+  'en erupción',
+  'en erupcion'
+]);
+
+/**
+ * Prioridad clínica para determinar el estado/color predominante en la parte baja/visible del diente (.corona)
+ * cuando varias caras presentan distintos hallazgos (Patologías > Tratamientos > Prevención).
  */
 const PRIORIDAD_CLINICA_POR_ESTADO: Record<string, number> = {
   caries: 100,
@@ -97,8 +155,8 @@ export class DienteGraficoComponent {
   });
 
   /**
-   * Lista de caras con hallazgos distintos de Sano/Presente ordenadas por prioridad clínica,
-   * o indicador de pieza evaluada como Sana cuando fue diagnosticada por el Backend.
+   * Lista de caras coronales con novedades distintas de Sano/Presente y que no sean exclusivas de raíz,
+   * ordenadas por prioridad clínica descendente.
    */
   readonly carasConHallazgo = computed<IndicadorCara[]>(() => {
     const data = this.diente();
@@ -114,8 +172,13 @@ export class DienteGraficoComponent {
       ['palatino_lingual', data.caras.palatino_lingual]
     ];
 
-    const patologias = orden
-      .filter(([, cara]) => cara && !this.esEstadoSanoOPresente(cara.estado))
+    return orden
+      .filter(
+        ([, cara]) =>
+          cara &&
+          !this.esEstadoSanoOPresente(cara.estado) &&
+          !this.esEstadoExclusivoDeRaiz(cara.estado)
+      )
       .map(([id, cara]) => ({
         id,
         etiqueta: cara.etiquetaVisual || ETIQUETA_FALLBACK_POR_CARA[id],
@@ -125,55 +188,59 @@ export class DienteGraficoComponent {
       }))
       .sort((a, b) => b.prioridad - a.prioridad)
       .map(({ id, etiqueta, estado, colorHex }) => ({ id, etiqueta, estado, colorHex }));
-
-    if (patologias.length > 0) {
-      return patologias;
-    }
-
-    if (this.fueEvaluadoComoSano()) {
-      return [
-        {
-          id: 'sano-evaluado',
-          etiqueta: 'Diagnóstico',
-          estado: 'Sano',
-          colorHex: this.resolverColorEstado('Sano', data.estadoGeneral?.colorHex ?? '#22C55E')
-        }
-      ];
-    }
-
-    return [];
   });
 
   /**
-   * Indica si el diente fue evaluado por el Backend (posee color clínico explícito distinto del blanco neutro inicial).
+   * Color hexadecimal exclusivo para la parte alargada del SVG que representa la RAÍZ (.raiz).
+   * Solo se pinta cuando el diente presenta una lesión radicular o un estado de diente completo con raíz
+   * (ej. Fractura Radicular, Lesión Periapical, Apicectomía, Endodoncia, Núcleo/Poste, etc.).
+   * Si el diente tiene Caries u otra afección coronal, retorna null para no pintar la raíz.
    */
-  readonly fueEvaluadoComoSano = computed<boolean>(() => {
-    const data = this.diente();
-    if (!data) {
-      return false;
-    }
-    if (this.tieneColorClinicoExplicito(data.estadoGeneral?.colorHex)) {
-      return true;
-    }
-    if (!data.caras) {
-      return false;
-    }
-    return Object.values(data.caras).some((cara) => this.tieneColorClinicoExplicito(cara?.colorHex));
-  });
-
-  /**
-   * Determina si la figura principal del diente debe pintarse (porque tiene hallazgo o fue evaluado como Sano).
-   */
-  readonly tieneHallazgo = computed<boolean>(() => {
+  readonly colorRaiz = computed<string | null>(() => {
     const data = this.diente();
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
-    if (!this.esEstadoSanoOPresente(estadoGeneral)) {
-      return true;
+    if (this.afectaRaiz(estadoGeneral)) {
+      return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
-    if (this.carasConHallazgo().length > 0) {
-      return true;
+    return null;
+  });
+
+  /**
+   * Color hexadecimal para la parte baja/visible del SVG que representa el DIENTE/CORONA (.corona).
+   * Se pinta cuando existen hallazgos en las caras coronales o estados generales que afectan la corona
+   * (ej. Caries, Restaurado, Corona, Endodoncia). No se pinta si la lesión es exclusiva de la raíz.
+   */
+  readonly colorCorona = computed<string | null>(() => {
+    const data = this.diente();
+    const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
+
+    if (
+      !this.esEstadoSanoOPresente(estadoGeneral) &&
+      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+    ) {
+      return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
-    return this.fueEvaluadoComoSano();
+
+    const hallazgos = this.carasConHallazgo();
+    if (hallazgos.length > 0) {
+      return hallazgos[0].colorHex;
+    }
+
+    return null;
+  });
+
+  /**
+   * Determina si el diente tiene alguna novedad (ya sea en la corona o en la raíz).
+   */
+  readonly tieneHallazgo = computed<boolean>(() => {
+    return this.colorCorona() !== null || this.colorRaiz() !== null;
+  });
+
+  /**
+   * Color principal de hallazgo del diente (priorizando corona y luego raíz para compatibilidad).
+   */
+  readonly colorHallazgo = computed<string | null>(() => {
+    return this.colorCorona() ?? this.colorRaiz();
   });
 
   /**
@@ -191,59 +258,41 @@ export class DienteGraficoComponent {
   readonly etiquetaEstado = computed<string>(() => {
     const data = this.diente();
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
-    if (!this.esEstadoSanoOPresente(estadoGeneral)) {
-      return estadoGeneral;
-    }
-    const hallazgos = this.carasConHallazgo();
-    if (hallazgos.length > 0) {
-      return hallazgos.map((h) => `${h.etiqueta}: ${h.estado}`).join(', ');
-    }
-    return 'Sano';
-  });
-
-  /**
-   * Color hexadecimal predominante para la figura principal del diente (.diente-svg):
-   * 1. Si existe un estado general de diente completo (ej. Corona, Endodoncia, Ausente), usa su color.
-   * 2. Si existen caras afectadas, usa el color de la cara con mayor prioridad clínica (ej. Caries > Restaurado).
-   * 3. Si el diente fue evaluado como Sano sin caras afectadas, usa verde (#22C55E).
-   * 4. Antes de cualquier dictado, retorna null (manteniendo el color marfil inicial).
-   */
-  readonly colorHallazgo = computed<string | null>(() => {
-    const data = this.diente();
-    const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
+    const partes: string[] = [];
 
     if (!this.esEstadoSanoOPresente(estadoGeneral)) {
-      return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
+      partes.push(estadoGeneral);
     }
-
     const hallazgos = this.carasConHallazgo();
-    if (hallazgos.length > 0) {
-      return hallazgos[0].colorHex;
+    if (hallazgos.length > 0 && ! ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(estadoGeneral.trim().toLowerCase())) {
+      partes.push(...hallazgos.map((h) => `${h.etiqueta}: ${h.estado}`));
     }
-
-    if (this.fueEvaluadoComoSano()) {
-      return this.resolverColorEstado('Sano', data?.estadoGeneral?.colorHex ?? '#22C55E');
-    }
-
-    return null;
+    return partes.length > 0 ? partes.join(', ') : 'Sano';
   });
 
   /**
    * Resuelve el color de cada segmento en el diagrama circular de 5 caras (.diagrama-circular-svg):
-   * - Si la cara tiene un hallazgo/patología (distinto de 'Sano' y 'Presente'), devuelve su colorHex exacto.
-   * - Si el diente completo tiene un estado general activo (ej. Corona, Endodoncia, Ausente), pinta las 5 caras con ese color.
-   * - Si la cara está en estado 'Sano' (o 'Presente'), conserva el color neutro por defecto (#fffef9).
+   * - Si la cara tiene un hallazgo coronal (distinto de 'Sano', 'Presente' y no exclusivo de raíz), usa su colorHex.
+   * - Si el diente tiene un estado general que afecta las caras coronales (ej. Endodoncia, Corona), pinta las 5 caras.
+   * - Si el diente solo tiene una lesión de raíz (ej. Fractura Radicular) o la cara está Sana, conserva #fffef9.
    */
   colorCaraCirculo(caraId: CaraCirculoId): string {
     const data = this.diente();
     const cara = data?.caras?.[caraId];
 
-    if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+    if (
+      cara &&
+      !this.esEstadoSanoOPresente(cara.estado) &&
+      !this.esEstadoExclusivoDeRaiz(cara.estado)
+    ) {
       return this.resolverColorEstado(cara.estado, cara.colorHex);
     }
 
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
-    if (!this.esEstadoSanoOPresente(estadoGeneral)) {
+    if (
+      !this.esEstadoSanoOPresente(estadoGeneral) &&
+      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+    ) {
       return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
 
@@ -266,17 +315,35 @@ export class DienteGraficoComponent {
     const etiqueta = cara?.etiquetaVisual || ETIQUETA_FALLBACK_POR_CARA[caraId];
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
 
-    if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+    if (
+      cara &&
+      !this.esEstadoSanoOPresente(cara.estado) &&
+      !this.esEstadoExclusivoDeRaiz(cara.estado)
+    ) {
       return `${etiqueta}: ${cara.estado}`;
     }
-    if (!this.esEstadoSanoOPresente(estadoGeneral)) {
+    if (
+      !this.esEstadoSanoOPresente(estadoGeneral) &&
+      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+    ) {
       return `${etiqueta}: ${estadoGeneral}`;
     }
-    return `${etiqueta}: ${cara?.estado || 'Sano'}`;
+    return `${etiqueta}: Sano`;
   }
 
   onDienteClick(): void {
     this.dienteClickeado.emit(this.numeroDiente());
+  }
+
+  private afectaRaiz(estado: string | null | undefined): boolean {
+    if (!estado) return false;
+    const norm = estado.trim().toLowerCase();
+    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
+  }
+
+  private esEstadoExclusivoDeRaiz(estado: string | null | undefined): boolean {
+    if (!estado) return false;
+    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(estado.trim().toLowerCase());
   }
 
   private obtenerPrioridadClinica(estado: string | null | undefined): number {

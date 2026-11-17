@@ -16,13 +16,22 @@ export type EstadoClinico =
   | 'Obturación Temporal'
   | 'Endodoncia'
   | 'Núcleo/Poste'
+  | 'Apicectomía'
+  | 'Lesión Periapical'
+  | 'Fractura Radicular'
+  | 'Perforación Radicular'
+  | 'Lesión de Furca'
+  | 'Recesión Gingival'
+  | 'Cálculo Subgingival'
+  | 'Reabsorción Radicular'
+  | 'Anomalía Radicular'
+  | 'Resto Radicular'
   | 'Corona' 
   | 'Póntico'
   | 'Prótesis Removible'
   | 'Implante'
   | 'Ausente' 
   | 'Extraído' 
-  | 'Resto Radicular'
   | 'Retenido'
   | 'En Erupción';
 
@@ -50,7 +59,7 @@ export interface CarasDiente {
 }
 
 /**
- * Representa el estado a nivel del diente completo (ej. si está ausente, no hay caras que pintar)
+ * Representa el estado a nivel del diente completo o de su raíz
  */
 export interface EstadoGeneral {
   estado: EstadoClinico | string;

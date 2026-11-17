@@ -26,15 +26,16 @@ describe('DienteGraficoComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('.corona')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.raiz')).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('.diagrama-circular-svg .sector-cara')).toHaveLength(5);
     expect(fixture.nativeElement.querySelector('[role="button"]')).toBeNull();
   });
 
-  it('should paint the tooth green (#22C55E) and keep the 5-face circle in default color (#fffef9) when evaluated as Sano', () => {
+  it('should keep root, crown, and 5-face circle in default color when the tooth is Sano', () => {
     const dienteSano: DienteData = {
       numero: 11,
       nombreColoquial: 'Incisivo central superior derecho',
-      estadoGeneral: { estado: 'Presente', colorHex: null },
+      estadoGeneral: { estado: 'Sano', colorHex: '#22C55E' },
       caras: {
         mesial: { etiquetaVisual: 'Mesial', estado: 'Sano', colorHex: '#22C55E' },
         distal: { etiquetaVisual: 'Distal', estado: 'Sano', colorHex: '#22C55E' },
@@ -47,17 +48,14 @@ describe('DienteGraficoComponent', () => {
     fixture.componentRef.setInput('diente', dienteSano);
     fixture.detectChanges();
 
-    expect(component.tieneHallazgo()).toBe(true);
-    expect(component.colorHallazgo()).toBe('#22C55E');
+    expect(component.tieneHallazgo()).toBe(false);
+    expect(component.colorCorona()).toBeNull();
+    expect(component.colorRaiz()).toBeNull();
     expect(component.colorCaraCirculo('mesial')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('distal')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('vestibular')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('palatino_lingual')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('oclusal_incisal')).toBe('#fffef9');
   });
 
-  it('should paint only affected faces in the circle and apply clinical priority to the main tooth diagram', () => {
-    const dienteConHallazgos: DienteData = {
+  it('should paint only the crown (.corona) and affected circle faces (NOT the root) when Caries is present', () => {
+    const dienteConCaries: DienteData = {
       numero: 16,
       nombreColoquial: 'Primer molar superior derecho',
       estadoGeneral: { estado: 'Presente', colorHex: null },
@@ -70,42 +68,66 @@ describe('DienteGraficoComponent', () => {
       }
     };
 
-    fixture.componentRef.setInput('diente', dienteConHallazgos);
+    fixture.componentRef.setInput('diente', dienteConCaries);
     fixture.detectChanges();
 
-    // Prioridad clínica: Caries (#EF4444) predomina sobre Restaurado (#3B82F6) en el diente principal
-    expect(component.colorHallazgo()).toBe('#EF4444');
+    expect(component.colorCorona()).toBe('#EF4444');
+    expect(component.colorRaiz()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-crown-finding')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-root-finding')).toBe(false);
 
-    // En el círculo solo se pintan las caras afectadas con su color respectivo; las sanas quedan en #fffef9
     expect(component.colorCaraCirculo('mesial')).toBe('#EF4444');
     expect(component.colorCaraCirculo('oclusal_incisal')).toBe('#3B82F6');
     expect(component.colorCaraCirculo('distal')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('vestibular')).toBe('#fffef9');
-    expect(component.colorCaraCirculo('palatino_lingual')).toBe('#fffef9');
   });
 
-  it('should paint both the main tooth diagram and all 5 circle faces when a whole-tooth state is active', () => {
-    const dienteConCorona: DienteData = {
-      numero: 15,
-      nombreColoquial: 'Segundo premolar superior derecho',
-      estadoGeneral: { estado: 'Corona', colorHex: '#EAB308' },
+  it('should paint ONLY the root (.raiz) and NOT the crown or circle when a root-exclusive lesion (e.g. Fractura Radicular) is present', () => {
+    const dienteFracturaRadicular: DienteData = {
+      numero: 21,
+      nombreColoquial: 'Incisivo central superior izquierdo',
+      estadoGeneral: { estado: 'Fractura Radicular', colorHex: '#B91C1C' },
       caras: {
-        mesial: { etiquetaVisual: 'Mesial', estado: 'Corona', colorHex: '#EAB308' },
-        distal: { etiquetaVisual: 'Distal', estado: 'Corona', colorHex: '#EAB308' },
-        vestibular: { etiquetaVisual: 'Vestibular', estado: 'Corona', colorHex: '#EAB308' },
-        palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Corona', colorHex: '#EAB308' },
-        oclusal_incisal: { etiquetaVisual: 'Oclusal', estado: 'Corona', colorHex: '#EAB308' }
+        mesial: { etiquetaVisual: 'Mesial', estado: 'Sano', colorHex: '#22C55E' },
+        distal: { etiquetaVisual: 'Distal', estado: 'Sano', colorHex: '#22C55E' },
+        vestibular: { etiquetaVisual: 'Vestibular', estado: 'Sano', colorHex: '#22C55E' },
+        palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Sano', colorHex: '#22C55E' },
+        oclusal_incisal: { etiquetaVisual: 'Incisal', estado: 'Sano', colorHex: '#22C55E' }
       }
     };
 
-    fixture.componentRef.setInput('diente', dienteConCorona);
+    fixture.componentRef.setInput('diente', dienteFracturaRadicular);
     fixture.detectChanges();
 
-    expect(component.colorHallazgo()).toBe('#EAB308');
-    expect(component.colorCaraCirculo('mesial')).toBe('#EAB308');
-    expect(component.colorCaraCirculo('distal')).toBe('#EAB308');
-    expect(component.colorCaraCirculo('vestibular')).toBe('#EAB308');
-    expect(component.colorCaraCirculo('palatino_lingual')).toBe('#EAB308');
-    expect(component.colorCaraCirculo('oclusal_incisal')).toBe('#EAB308');
+    expect(component.colorRaiz()).toBe('#B91C1C');
+    expect(component.colorCorona()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-root-finding')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-crown-finding')).toBe(false);
+
+    expect(component.colorCaraCirculo('mesial')).toBe('#fffef9');
+    expect(component.colorCaraCirculo('oclusal_incisal')).toBe('#fffef9');
+  });
+
+  it('should paint root, crown, and all 5 circle faces when Endodoncia (full-tooth with root) is active', () => {
+    const dienteConEndodoncia: DienteData = {
+      numero: 24,
+      nombreColoquial: 'Primer premolar superior izquierdo',
+      estadoGeneral: { estado: 'Endodoncia', colorHex: '#D946EF' },
+      caras: {
+        mesial: { etiquetaVisual: 'Mesial', estado: 'Endodoncia', colorHex: '#D946EF' },
+        distal: { etiquetaVisual: 'Distal', estado: 'Endodoncia', colorHex: '#D946EF' },
+        vestibular: { etiquetaVisual: 'Vestibular', estado: 'Endodoncia', colorHex: '#D946EF' },
+        palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Endodoncia', colorHex: '#D946EF' },
+        oclusal_incisal: { etiquetaVisual: 'Oclusal', estado: 'Endodoncia', colorHex: '#D946EF' }
+      }
+    };
+
+    fixture.componentRef.setInput('diente', dienteConEndodoncia);
+    fixture.detectChanges();
+
+    expect(component.colorRaiz()).toBe('#D946EF');
+    expect(component.colorCorona()).toBe('#D946EF');
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-root-finding')).toBe(true);
+    expect(fixture.nativeElement.querySelector('.diente-container').classList.contains('has-crown-finding')).toBe(true);
+    expect(component.colorCaraCirculo('oclusal_incisal')).toBe('#D946EF');
   });
 });
