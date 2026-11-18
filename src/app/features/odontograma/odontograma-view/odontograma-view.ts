@@ -253,8 +253,9 @@ export class OdontogramaViewComponent {
           return backendBody.detail;
         }
       }
+
       if (err.status === 0) {
-        return 'No se pudo conectar con el backend en http://localhost:8080. Verifica que el servidor Java esté en ejecución.';
+        return 'No se pudo conectar con el backend clínico. Verifica que el servicio esté disponible.';
       }
     }
     return 'No fue posible procesar el dictado clínico en el servidor. Inténtalo de nuevo.';

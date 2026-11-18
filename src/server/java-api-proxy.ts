@@ -7,7 +7,8 @@ const DEFAULT_UPSTREAM_TIMEOUT_MS = 300_000;
 
 export function registerJavaApiProxy(
   app: Express,
-  backendUrl = process.env['JAVA_API_BASE_URL'] || 'http://localhost:8080',
+  backendUrl =
+    process.env['JAVA_API_BASE_URL'] || 'https://crm-odontologico-backend-qpca.onrender.com',
   timeoutMs = getUpstreamTimeout()
 ): void {
   const backend = new URL(backendUrl);

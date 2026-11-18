@@ -346,7 +346,7 @@ export class PacienteFormComponent implements OnDestroy {
       const message = error.error?.message;
       if (typeof message === 'string' && message.trim()) return message;
       if (error.status === 0) {
-        return 'No se pudo conectar con el backend clínico en http://localhost:8080.';
+        return 'No se pudo conectar con el backend clínico. Verifica que el servicio esté disponible.';
       }
     }
     return 'No fue posible organizar los datos del paciente. Inténtalo de nuevo.';

@@ -25,11 +25,12 @@ npm start
 
 El proxy de desarrollo reenvía `/api/speech-to-text` al servidor SSR en `localhost:4000` y
 `/api/v1` al backend Java en `localhost:8080`; reinicia `npm start` después de cambiar su
-configuración. El servidor SSR también reenvía `/api/v1` al backend Java. En despliegues, configura
-`JAVA_API_BASE_URL` con la URL base accesible desde el proceso SSR (por defecto
-`http://localhost:8080`). El proxy espera hasta 5 minutos por respuesta; puedes cambiarlo con
+configuración. El servidor SSR también reenvía `/api/v1` al backend Java. En despliegues, el proxy
+usa `https://crm-odontologico-backend-qpca.onrender.com` por defecto; puedes sobrescribir la URL base
+con `JAVA_API_BASE_URL` en el entorno del proceso SSR. El proxy espera hasta 5 minutos por respuesta; puedes cambiarlo con
 `JAVA_API_TIMEOUT_MS` (milisegundos, por defecto `300000`). Configura también el proxy del hosting
-para enrutar `/api/v1` al backend Java si el navegador accede al frontend por otro servidor. Los
+para enrutar `/api/v1` al backend Java si el navegador accede al frontend por otro servidor sin usar
+el proxy SSR. Los
 túneles y gateways, como el de Codespaces, pueden imponer un límite menor y devolver `504` antes
 de que venza este timeout; en ese caso, aumentarlo no bastará y habrá que reducir el tiempo de
 respuesta del backend o acceder mediante un gateway que permita solicitudes más largas.
