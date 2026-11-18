@@ -33,6 +33,15 @@ describe('OdontogramaViewComponent', () => {
     expect(compiled.querySelector('.note-rail app-nota-clinica')).toBeTruthy();
   });
 
+  it('should show the no-findings message while the odontogram has only its default healthy states', () => {
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.legend-empty')?.textContent?.trim()).toBe(
+      'No se tienen novedades en los dientes'
+    );
+  });
+
   it('should show the odontogram by default and open the patient form only from navigation', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -115,6 +124,12 @@ describe('OdontogramaViewComponent', () => {
     const tooth16Button = compiled.querySelector('button[aria-label^="Seleccionar diente 16"]');
     expect(tooth16Button?.classList.contains('has-finding')).toBe(true);
     expect(compiled.querySelector('app-modal-detalle-diente')).toBeNull();
+    const legend = compiled.querySelector('.chart-legend')?.textContent ?? '';
+    expect(legend).toContain('Caries');
+    expect(legend).toContain('Restaurado');
+    expect(legend).not.toContain('Sano');
+    expect(legend).not.toContain('Presente');
+    expect(legend).not.toContain('Endodoncia');
   });
 
   it('should open the modal on tooth click and update 3D diagram, 5-face circle, root SVG and crown SVG when saving face and root edits', () => {

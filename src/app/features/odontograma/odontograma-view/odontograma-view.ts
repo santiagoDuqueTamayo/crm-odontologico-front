@@ -55,6 +55,44 @@ export class OdontogramaViewComponent {
     { nombre: 'Retenido', color: '#A855F7' },
     { nombre: 'En Erupción', color: '#84CC16' }
   ] as const;
+  readonly estadosClinicosEnUso = computed(() => {
+    const estadosUsados = new Map<string, { nombre: string; color: string | null }>();
+    const registrarEstado = (
+      estado: string | null | undefined,
+      color: string | null | undefined
+    ): void => {
+      const nombre = estado?.trim();
+      if (!nombre || this.esEstadoSanoOPresente(nombre)) return;
+
+      const clave = nombre.toLowerCase();
+      if (!estadosUsados.has(clave)) {
+        estadosUsados.set(clave, { nombre, color: color ?? null });
+      }
+    };
+
+    for (const diente of this.dientes()) {
+      registrarEstado(diente.estadoGeneral?.estado, diente.estadoGeneral?.colorHex);
+      for (const cara of Object.values(diente.caras)) {
+        registrarEstado(cara.estado, cara.colorHex);
+      }
+      if (diente.raiz) {
+        registrarEstado(diente.raiz.estado, diente.raiz.colorHex);
+      }
+    }
+
+    const estadosConocidos = this.estadosClinicos.flatMap((estado) => {
+      const usado = estadosUsados.get(estado.nombre.toLowerCase());
+      return usado ? [{ nombre: estado.nombre, color: estado.color ?? usado.color }] : [];
+    });
+    const nombresConocidos = new Set(
+      this.estadosClinicos.map((estado) => estado.nombre.toLowerCase())
+    );
+    const estadosDesconocidos = [...estadosUsados.entries()]
+      .filter(([clave]) => !nombresConocidos.has(clave))
+      .map(([, estado]) => ({ nombre: estado.nombre, color: estado.color ?? '#6c8077' }));
+
+    return [...estadosConocidos, ...estadosDesconocidos];
+  });
 
   readonly vistaActual = signal<'odontograma' | 'paciente'>('odontograma');
   readonly odontogramaId = signal('odont-001');

@@ -65,19 +65,23 @@
             </app-odontograma-grid>
 
             <div class="chart-legend" aria-label="Leyenda de estados clínicos">
-              <span><i class="legend-dot selected"></i>Seleccionado</span>
-              @for (estado of estadosClinicos; track estado.nombre) {
-                <span>
-                  <i
-                    class="legend-dot"
-                    [style.background-color]="estado.color"
-                    [style.border-color]="estado.color ?? '#9db8aa'"
-                    aria-hidden="true">
-                  </i>
-                  {{ estado.nombre }}
-                </span>
+              @if (estadosClinicosEnUso().length === 0) {
+                <span class="legend-empty" role="status">No se tienen novedades en los dientes</span>
+              } @else {
+                <span><i class="legend-dot selected"></i>Seleccionado</span>
+                @for (estado of estadosClinicosEnUso(); track estado.nombre) {
+                  <span>
+                    <i
+                      class="legend-dot"
+                      [style.background-color]="estado.color"
+                      [style.border-color]="estado.color ?? '#9db8aa'"
+                      aria-hidden="true">
+                    </i>
+                    {{ estado.nombre }}
+                  </span>
+                }
+                <span class="legend-help">Haz clic en una pieza para explorar sus caras</span>
               }
-              <span class="legend-help">Haz clic en una pieza para explorar sus caras</span>
             </div>
           </div>
 
