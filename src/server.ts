@@ -15,7 +15,12 @@ const app = express();
 registerSpeechTranscriptionRoute(app);
 registerJavaApiProxy(app);
 const angularApp = new AngularNodeAppEngine({
-  allowedHosts: ['localhost', '127.0.0.1', '*.app.github.dev'],
+  allowedHosts: [
+    'localhost',
+    '127.0.0.1',
+    '*.app.github.dev',
+    'crm-odontologico-front.onrender.com'
+  ],
   trustProxyHeaders: ['x-forwarded-host', 'x-forwarded-port', 'x-forwarded-proto'],
 });
 
