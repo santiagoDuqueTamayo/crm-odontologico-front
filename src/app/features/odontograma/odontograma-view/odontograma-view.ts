@@ -24,6 +24,38 @@ import { OdontogramaApiService } from '../services/odontograma-api.service';
 export class OdontogramaViewComponent {
   private readonly odontogramaApi = inject(OdontogramaApiService);
 
+  readonly estadosClinicos = [
+    { nombre: 'Sano', color: '#22C55E' },
+    { nombre: 'Presente', color: null },
+    { nombre: 'Sellante', color: '#06B6D4' },
+    { nombre: 'Caries', color: '#EF4444' },
+    { nombre: 'Fracturado', color: '#F97316' },
+    { nombre: 'Desgaste/Abfracción', color: '#FDBA74' },
+    { nombre: 'Rest. Defectuosa', color: '#E11D48' },
+    { nombre: 'Restaurado', color: '#3B82F6' },
+    { nombre: 'Obturación Temporal', color: '#94A3B8' },
+    { nombre: 'Endodoncia', color: '#D946EF' },
+    { nombre: 'Núcleo/Poste', color: '#8B5CF6' },
+    { nombre: 'Apicectomía', color: '#C026D3' },
+    { nombre: 'Lesión Periapical', color: '#991B1B' },
+    { nombre: 'Fractura Radicular', color: '#B91C1C' },
+    { nombre: 'Perforación Radicular', color: '#BE123C' },
+    { nombre: 'Lesión de Furca', color: '#B45309' },
+    { nombre: 'Recesión Gingival', color: '#D97706' },
+    { nombre: 'Cálculo Subgingival', color: '#92400E' },
+    { nombre: 'Reabsorción Radicular', color: '#7C2D12' },
+    { nombre: 'Anomalía Radicular', color: '#0369A1' },
+    { nombre: 'Resto Radicular', color: '#78716C' },
+    { nombre: 'Corona', color: '#EAB308' },
+    { nombre: 'Póntico', color: '#FBBF24' },
+    { nombre: 'Prótesis Removible', color: '#F472B6' },
+    { nombre: 'Implante', color: '#14B8A6' },
+    { nombre: 'Ausente', color: '#6B7280' },
+    { nombre: 'Extraído', color: '#64748B' },
+    { nombre: 'Retenido', color: '#A855F7' },
+    { nombre: 'En Erupción', color: '#84CC16' }
+  ] as const;
+
   readonly vistaActual = signal<'odontograma' | 'paciente'>('odontograma');
   readonly odontogramaId = signal('odont-001');
   readonly datosPaciente = signal<DatosPaciente>(crearPacienteVacio());
