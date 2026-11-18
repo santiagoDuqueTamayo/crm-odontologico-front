@@ -26,7 +26,9 @@ describe('OdontogramaViewComponent', () => {
   it('should render compact left navigation and a separate clinical note rail', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('.sidebar nav[aria-label="Navegación principal"]')).toBeTruthy();
+    const nav = compiled.querySelector('.sidebar nav[aria-label="Navegación principal"]');
+    expect(nav).toBeTruthy();
+    expect(nav?.querySelectorAll('button')).toHaveLength(2);
     expect(compiled.querySelector('.workspace-grid #odontograma')).toBeTruthy();
     expect(compiled.querySelector('.note-rail app-nota-clinica')).toBeTruthy();
   });
@@ -107,12 +109,68 @@ describe('OdontogramaViewComponent', () => {
     const diente16 = component.dientes().find((d) => d.numero === 16);
     expect(diente16?.caras.mesial.estado).toBe('Caries');
     expect(diente16?.caras.oclusal_incisal.estado).toBe('Restaurado');
-    expect(component.dienteSeleccionado()?.numero).toBe(16);
-    expect(component.caraSeleccionada()).toBe('oclusal_incisal');
+    expect(component.dienteSeleccionado()).toBeNull();
 
     const compiled = fixture.nativeElement as HTMLElement;
     const tooth16Button = compiled.querySelector('button[aria-label^="Seleccionar diente 16"]');
     expect(tooth16Button?.classList.contains('has-finding')).toBe(true);
-    expect(compiled.querySelector('#detalle-pieza-titulo')?.textContent).toContain('Primer molar superior derecho (Diente 16)');
+    expect(compiled.querySelector('app-modal-detalle-diente')).toBeNull();
+  });
+
+  it('should open the modal on tooth click and update 3D diagram, 5-face circle, root SVG and crown SVG when saving face and root edits', () => {
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const tooth11Button = compiled.querySelector('button[aria-label^="Seleccionar diente 11"]') as HTMLButtonElement;
+    tooth11Button.click();
+    fixture.detectChanges();
+
+    const modal = compiled.querySelector('app-modal-detalle-diente');
+    expect(modal).toBeTruthy();
+
+    // Editar cara Mesial -> Caries (#EF4444)
+    const pills = modal!.querySelectorAll('.resumen-cara-pill');
+    const mesialPill = [...pills].find((p) => p.textContent?.includes('Mesial')) as HTMLButtonElement;
+    mesialPill.click();
+    fixture.detectChanges();
+
+    const opcionCaries = [...modal!.querySelectorAll('.estado-opcion-btn')].find(
+      (b) => b.textContent?.trim() === 'Caries'
+    ) as HTMLButtonElement;
+    opcionCaries.click();
+    fixture.detectChanges();
+
+    // Editar Raíz -> Fractura Radicular (#B91C1C)
+    const raizPill = [...pills].find((p) => p.textContent?.includes('Raíz')) as HTMLButtonElement;
+    raizPill.click();
+    fixture.detectChanges();
+
+    const opcionFractura = [...modal!.querySelectorAll('.estado-opcion-btn')].find(
+      (b) => b.textContent?.trim() === 'Fractura Radicular'
+    ) as HTMLButtonElement;
+    opcionFractura.click();
+    fixture.detectChanges();
+
+    // Presionar "Actualizar información" centrado en .estado-cara
+    const btnGuardar = modal!.querySelector('.estado-cara .btn-actualizar-cara') as HTMLButtonElement;
+    btnGuardar.click();
+    fixture.detectChanges();
+
+    // Verificar que se cerró el modal del diagrama 3D y apareció el mensaje de confirmación de edición
+    expect(compiled.querySelector('app-modal-detalle-diente')).toBeNull();
+    expect(compiled.querySelector('.alerta-confirmacion-edicion')?.textContent).toContain(
+      'Se ha actualizado correctamente el estado del diente 11.'
+    );
+
+    // Verificar actualización en app-diente-grafico (corona general, raíz y diagrama circular de 5 estados)
+    expect(tooth11Button.classList.contains('has-crown-finding')).toBe(true);
+    expect(tooth11Button.classList.contains('has-root-finding')).toBe(true);
+    expect(tooth11Button.style.getPropertyValue('--crown-color')).toBe('#EF4444');
+    expect(tooth11Button.style.getPropertyValue('--root-color')).toBe('#B91C1C');
+
+    const sectorMesial = tooth11Button.querySelector('.sector-mesial');
+    expect(sectorMesial?.getAttribute('fill')).toBe('#EF4444');
+    const sectorDistal = tooth11Button.querySelector('.sector-distal');
+    expect(sectorDistal?.getAttribute('fill')).toBe('#fffef9');
   });
 });

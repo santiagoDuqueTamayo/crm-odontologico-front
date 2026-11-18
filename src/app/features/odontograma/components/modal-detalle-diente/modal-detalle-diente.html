@@ -1,0 +1,23 @@
+<div
+  class="modal-backdrop"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Detalle y edición del diente ' + diente().numero"
+  (click)="onBackdropClick($event)">
+  <div class="modal-dialog">
+    <button
+      type="button"
+      class="modal-close-btn"
+      aria-label="Cerrar modal"
+      (click)="onCerrarClick()">
+      ✕
+    </button>
+
+    <app-detalle-pieza
+      [diente]="diente()"
+      [caraSeleccionada]="caraSeleccionada()"
+      (caraClickeada)="caraClickeada.emit($event)"
+      (actualizarDiente)="actualizarDiente.emit($event)">
+    </app-detalle-pieza>
+  </div>
+</div>

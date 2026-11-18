@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  background: rgba(18, 59, 48, 0.48);
+  backdrop-filter: blur(4px);
+  animation: fade-in-backdrop 160ms ease-out;
+}
+
+.modal-dialog {
+  position: relative;
+  width: min(820px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 54px rgba(15, 48, 38, 0.26);
+  animation: slide-up-modal 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-dialog ::ng-deep .detalle-heading {
+  padding-right: 40px;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #d5e5dc;
+  border-radius: 50%;
+  background: #f5fbf7;
+  color: #1d4938;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.modal-close-btn:hover {
+  border-color: #9dc9ac;
+  background: #e5f4ec;
+  color: #123b30;
+}
+
+.modal-close-btn:focus-visible {
+  outline: 3px solid rgba(54, 144, 101, 0.4);
+  outline-offset: 2px;
+}
+
+@keyframes fade-in-backdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up-modal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 700px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-dialog {
+    max-height: calc(100vh - 20px);
+  }
+}

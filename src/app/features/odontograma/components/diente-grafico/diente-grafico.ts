@@ -177,7 +177,7 @@ export class DienteGraficoComponent {
         ([, cara]) =>
           cara &&
           !this.esEstadoSanoOPresente(cara.estado) &&
-          !this.esEstadoExclusivoDeRaiz(cara.estado)
+          (data.raiz !== undefined || !this.esEstadoExclusivoDeRaiz(cara.estado))
       )
       .map(([id, cara]) => ({
         id,
@@ -192,12 +192,17 @@ export class DienteGraficoComponent {
 
   /**
    * Color hexadecimal exclusivo para la parte alargada del SVG que representa la RAÍZ (.raiz).
-   * Solo se pinta cuando el diente presenta una lesión radicular o un estado de diente completo con raíz
-   * (ej. Fractura Radicular, Lesión Periapical, Apicectomía, Endodoncia, Núcleo/Poste, etc.).
-   * Si el diente tiene Caries u otra afección coronal, retorna null para no pintar la raíz.
+   * Solo se pinta cuando el diente presenta una lesión radicular, un estado en su cara 'raiz'
+   * o un estado de diente completo con raíz.
    */
   readonly colorRaiz = computed<string | null>(() => {
     const data = this.diente();
+    if (data?.raiz !== undefined) {
+      if (!this.esEstadoSanoOPresente(data.raiz.estado)) {
+        return this.resolverColorEstado(data.raiz.estado, data.raiz.colorHex);
+      }
+      return null;
+    }
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
     if (this.afectaRaiz(estadoGeneral)) {
       return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
@@ -212,6 +217,19 @@ export class DienteGraficoComponent {
    */
   readonly colorCorona = computed<string | null>(() => {
     const data = this.diente();
+    const hallazgos = this.carasConHallazgo();
+
+    if (data?.raiz !== undefined) {
+      if (hallazgos.length > 0) {
+        return hallazgos[0].colorHex;
+      }
+      const estadoRaizNorm = (data.raiz.estado ?? '').trim().toLowerCase();
+      if (ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(estadoRaizNorm)) {
+        return this.resolverColorEstado(data.raiz.estado, data.raiz.colorHex);
+      }
+      return null;
+    }
+
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
 
     if (
@@ -221,7 +239,6 @@ export class DienteGraficoComponent {
       return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
 
-    const hallazgos = this.carasConHallazgo();
     if (hallazgos.length > 0) {
       return hallazgos[0].colorHex;
     }
@@ -280,6 +297,13 @@ export class DienteGraficoComponent {
     const data = this.diente();
     const cara = data?.caras?.[caraId];
 
+    if (data?.raiz !== undefined) {
+      if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+        return this.resolverColorEstado(cara.estado, cara.colorHex);
+      }
+      return COLOR_POR_DEFECTO_CARA;
+    }
+
     if (
       cara &&
       !this.esEstadoSanoOPresente(cara.estado) &&
@@ -314,6 +338,13 @@ export class DienteGraficoComponent {
     const cara = data?.caras?.[caraId];
     const etiqueta = cara?.etiquetaVisual || ETIQUETA_FALLBACK_POR_CARA[caraId];
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
+
+    if (data?.raiz !== undefined) {
+      if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+        return `${etiqueta}: ${cara.estado}`;
+      }
+      return `${etiqueta}: Sano`;
+    }
 
     if (
       cara &&

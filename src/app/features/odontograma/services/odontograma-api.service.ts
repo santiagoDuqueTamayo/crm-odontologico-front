@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import {
+  ActualizarDienteRequest,
+  construirDienteActualizado,
+  DienteData,
   DienteFdiMetadata,
   OdontogramaUpdateResponse,
   VoiceCaptureRequest
@@ -35,6 +38,26 @@ export class OdontogramaApiService {
       return throwError(() => new Error('HttpClient no está configurado.'));
     }
     return this.http.post<OdontogramaUpdateResponse>(`${this.odontogramBaseUrl}/voice-capture`, request);
+  }
+
+  /**
+   * Contrato preparado para persistir la edición de las 5 caras y la raíz de un diente en el Backend
+   * y retornar el OdontogramaUpdateResponse con los colores semánticos resueltos para pintar en el Frontend.
+   */
+  actualizarCarasDiente(
+    odontogramaId: string,
+    dienteActual: DienteData,
+    request: ActualizarDienteRequest
+  ): Observable<OdontogramaUpdateResponse> {
+    const dienteActualizado = construirDienteActualizado(
+      dienteActual,
+      request.caras,
+      request.raiz
+    );
+    return of({
+      odontogramaId,
+      dientes: [dienteActualizado]
+    });
   }
 
   /**

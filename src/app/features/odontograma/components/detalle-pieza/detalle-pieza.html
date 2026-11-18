@@ -3,13 +3,13 @@
     <div>
       <p class="detalle-kicker">EXPLORACIÓN DE LA PIEZA</p>
       <h3 id="detalle-pieza-titulo">{{ tituloPieza() }}</h3>
-      <p class="detalle-subtitulo">Selecciona una superficie para consultar su estado.</p>
+      <p class="detalle-subtitulo">Selecciona una superficie o la raíz para consultar y editar su estado.</p>
     </div>
     <span
       class="estado-general"
-      [style.border-color]="diente().estadoGeneral.colorHex || null"
-      [style.color]="diente().estadoGeneral.colorHex || null">
-      {{ diente().estadoGeneral.estado }}
+      [style.border-color]="dienteEfectivo().estadoGeneral.colorHex || null"
+      [style.color]="dienteEfectivo().estadoGeneral.colorHex || null">
+      {{ dienteEfectivo().estadoGeneral.estado }}
     </span>
   </div>
 
@@ -23,7 +23,7 @@
         class="visor-3d"
         [hidden]="estadoVisor3d() !== 'listo'"
         role="group"
-        [attr.aria-label]="'Modelo 3D del diente ' + diente().numero + '. Arrastra para rotar y haz clic para seleccionar una superficie.'"
+        [attr.aria-label]="'Modelo 3D del diente ' + dienteEfectivo().numero + '. Arrastra para rotar y haz clic para seleccionar una superficie o la raíz.'"
         (pointerdown)="iniciarRotacion($event)"
         (pointermove)="moverRotacion($event)"
         (pointerup)="finalizarRotacion($event)"
@@ -40,63 +40,76 @@
           <button type="button" class="reiniciar-vista" (click)="reiniciarVista()">Restablecer vista</button>
         </div>
         <div class="superficies-teclado" aria-label="Seleccionar superficie dental">
-          <button type="button" [class.activa]="caraSeleccionada() === 'vestibular'" (click)="seleccionarCara('vestibular')">
-            {{ diente().caras.vestibular.etiquetaVisual }}
+          <button type="button" [class.activa]="caraActivaId() === 'vestibular'" (click)="seleccionarCara('vestibular')">
+            {{ dienteEfectivo().caras.vestibular.etiquetaVisual }}
           </button>
-          <button type="button" [class.activa]="caraSeleccionada() === 'palatino_lingual'" (click)="seleccionarCara('palatino_lingual')">
-            {{ diente().caras.palatino_lingual.etiquetaVisual }}
+          <button type="button" [class.activa]="caraActivaId() === 'palatino_lingual'" (click)="seleccionarCara('palatino_lingual')">
+            {{ dienteEfectivo().caras.palatino_lingual.etiquetaVisual }}
           </button>
-          <button type="button" [class.activa]="caraSeleccionada() === 'mesial'" (click)="seleccionarCara('mesial')">
-            {{ diente().caras.mesial.etiquetaVisual }}
+          <button type="button" [class.activa]="caraActivaId() === 'mesial'" (click)="seleccionarCara('mesial')">
+            {{ dienteEfectivo().caras.mesial.etiquetaVisual }}
           </button>
-          <button type="button" [class.activa]="caraSeleccionada() === 'distal'" (click)="seleccionarCara('distal')">
-            {{ diente().caras.distal.etiquetaVisual }}
+          <button type="button" [class.activa]="caraActivaId() === 'distal'" (click)="seleccionarCara('distal')">
+            {{ dienteEfectivo().caras.distal.etiquetaVisual }}
           </button>
-          <button type="button" [class.activa]="caraSeleccionada() === 'oclusal_incisal'" (click)="seleccionarCara('oclusal_incisal')">
-            {{ diente().caras.oclusal_incisal.etiquetaVisual }}
+          <button type="button" [class.activa]="caraActivaId() === 'oclusal_incisal'" (click)="seleccionarCara('oclusal_incisal')">
+            {{ dienteEfectivo().caras.oclusal_incisal.etiquetaVisual }}
+          </button>
+          <button type="button" [class.activa]="caraActivaId() === 'raiz'" (click)="seleccionarCara('raiz')">
+            Raíz
           </button>
         </div>
       } @else {
         @if (estadoVisor3d() === 'error') {
           <p class="visor-error" role="status">{{ errorVisor3d() }}</p>
         }
-        <svg class="caras-svg" viewBox="0 0 240 310" role="group" [attr.aria-label]="'Superficies y raíces del diente ' + diente().numero">
+        <svg class="caras-svg" viewBox="0 0 240 310" role="group" [attr.aria-label]="'Superficies y raíces del diente ' + dienteEfectivo().numero">
           <ellipse class="sombra-diente" cx="120" cy="301" rx="48" ry="5"/>
-          <path class="raiz-perspectiva raiz-izquierda" [style.fill]="colorRaizSvg()" d="M78 178c8 7 19 12 34 14 7 1 9 5 7 15l-8 46c-4 18-9 33-15 43-4 7-11 5-14-2-10-25-15-53-16-79-1-16-5-25-13-34Z"/>
-          <path class="raiz-perspectiva raiz-derecha" [style.fill]="colorRaizSvg()" d="M162 178c-8 7-19 12-34 14-7 1-9 5-7 15l8 46c4 18 9 33 15 43 4 7 11 5 14-2 10-25 15-53 16-79 1-16 5-25 13-34Z"/>
+          <path
+            class="raiz-perspectiva raiz-izquierda"
+            [class.activa]="caraActivaId() === 'raiz'"
+            [style.fill]="colorRaizSvg()"
+            d="M78 178c8 7 19 12 34 14 7 1 9 5 7 15l-8 46c-4 18-9 33-15 43-4 7-11 5-14-2-10-25-15-53-16-79-1-16-5-25-13-34Z"
+            (click)="seleccionarCara('raiz')"/>
+          <path
+            class="raiz-perspectiva raiz-derecha"
+            [class.activa]="caraActivaId() === 'raiz'"
+            [style.fill]="colorRaizSvg()"
+            d="M162 178c-8 7-19 12-34 14-7 1-9 5-7 15l8 46c4 18 9 33 15 43 4 7 11 5 14-2 10-25 15-53 16-79 1-16 5-25 13-34Z"
+            (click)="seleccionarCara('raiz')"/>
           <path class="surco-raiz" d="M94 199c4 22 9 44 14 61m38-61c-4 22-9 44-14 61"/>
           <path class="diente-contorno" d="M66 20c-26 4-43 25-43 53 0 15 7 28 16 39-9 12-15 25-14 40 2 29 22 48 52 47 15-1 26-7 43-7s28 6 43 7c30 1 50-18 52-47 1-15-5-28-14-40 9-11 16-24 16-39 0-28-17-49-43-53-20-3-36 6-54 6s-34-9-54-6Z"/>
           <path
             class="cara-superficie"
-            [class.activa]="caraSeleccionada() === 'vestibular'"
+            [class.activa]="caraActivaId() === 'vestibular'"
             [attr.fill]="colorCaraSvg('vestibular')"
             d="M67 28c-21 3-35 20-35 44 0 12 6 23 14 33l23-19 25-14 12-31c-13-6-25-15-39-13Z"
             role="button" tabindex="0" aria-label="Cara vestibular"
             (click)="seleccionarCara('vestibular')" (keydown)="onCaraKeydown('vestibular', $event)"/>
           <path
             class="cara-superficie"
-            [class.activa]="caraSeleccionada() === 'distal'"
+            [class.activa]="caraActivaId() === 'distal'"
             [attr.fill]="colorCaraSvg('distal')"
             d="M173 28c21 3 35 20 35 44 0 12-6 23-14 33l-23-19-25-14-12-31c13-6 25-15 39-13Z"
             role="button" tabindex="0" aria-label="Cara distal"
             (click)="seleccionarCara('distal')" (keydown)="onCaraKeydown('distal', $event)"/>
           <path
             class="cara-superficie"
-            [class.activa]="caraSeleccionada() === 'mesial'"
+            [class.activa]="caraActivaId() === 'mesial'"
             [attr.fill]="colorCaraSvg('mesial')"
             d="M32 111c-8 11-13 23-12 37 2 26 20 43 47 42 13-1 25-7 39-7l-4-33-12-30-24-17-23 19-11-11Z"
             role="button" tabindex="0" aria-label="Cara mesial"
             (click)="seleccionarCara('mesial')" (keydown)="onCaraKeydown('mesial', $event)"/>
           <path
             class="cara-superficie"
-            [class.activa]="caraSeleccionada() === 'palatino_lingual'"
+            [class.activa]="caraActivaId() === 'palatino_lingual'"
             [attr.fill]="colorCaraSvg('palatino_lingual')"
             d="M208 111c8 11 13 23 12 37-2 26-20 43-47 42-13-1-25-7-39-7l4-33 12-30 24-17 23 19 11-11Z"
             role="button" tabindex="0" aria-label="Cara palatina o lingual"
             (click)="seleccionarCara('palatino_lingual')" (keydown)="onCaraKeydown('palatino_lingual', $event)"/>
           <path
             class="cara-superficie"
-            [class.activa]="caraSeleccionada() === 'oclusal_incisal'"
+            [class.activa]="caraActivaId() === 'oclusal_incisal'"
             [attr.fill]="colorCaraSvg('oclusal_incisal')"
             d="m103 61 17-8 17 8 19 24-9 34-10 33h-40l-10-33-9-34 25-24Z"
             role="button" tabindex="0" aria-label="Cara oclusal o incisal"
@@ -105,13 +118,13 @@
         </svg>
       }
       <div class="orientacion">
-        <span>{{ diente().caras.vestibular.etiquetaVisual }}</span>
-        <span>{{ diente().caras.palatino_lingual.etiquetaVisual }}</span>
+        <span>{{ dienteEfectivo().caras.vestibular.etiquetaVisual }}</span>
+        <span>{{ dienteEfectivo().caras.palatino_lingual.etiquetaVisual }}</span>
       </div>
     </div>
 
     <div class="estado-cara">
-      @if (caraSeleccionada(); as caraId) {
+      @if (caraActivaId(); as caraId) {
         <p class="detalle-kicker">SUPERFICIE SELECCIONADA</p>
         <h4>{{ caraActiva()?.etiquetaVisual }}</h4>
         <span
@@ -119,28 +132,66 @@
           [class]="caraActiva()?.estado?.toLowerCase()"
           [style.border-color]="colorBadgeCara(caraId)"
           [style.color]="colorBadgeCara(caraId)">
+          <span
+            class="badge-color-dot"
+            [style.background-color]="colorBadgeCara(caraId) || '#22C55E'">
+          </span>
           {{ caraActiva()?.estado }}
         </span>
-        <p class="estado-ayuda">El estado se muestra según los datos actuales del odontograma.</p>
+        <p class="estado-ayuda">Haz clic en cualquier superficie abajo para desplegar y elegir su estado clínico.</p>
       } @else {
         <div class="estado-vacio-icon" aria-hidden="true">⌖</div>
         <h4>Selecciona una cara</h4>
-        <p class="estado-ayuda">Haz clic en cualquiera de las cinco superficies del diente para ver su estado.</p>
+        <p class="estado-ayuda">Haz clic en cualquiera de las cinco superficies o en la raíz del diente para ver o editar su estado.</p>
       }
 
-      <div class="resumen-superficies" aria-label="Resumen de las 5 superficies">
+      <div class="resumen-superficies" aria-label="Resumen de las superficies y raíz">
         @for (item of resumenCaras(); track item.id) {
-          <button
-            type="button"
-            class="resumen-cara-pill"
-            [class.activa]="caraSeleccionada() === item.id"
-            [class.con-hallazgo]="item.tieneHallazgo"
-            (click)="seleccionarCara(item.id)">
-            <span class="pill-dot" [style.background-color]="item.colorHex || '#22c55e'"></span>
-            <span class="pill-nombre">{{ item.etiquetaVisual }}:</span>
-            <strong class="pill-estado">{{ item.estado }}</strong>
-          </button>
+          <div class="resumen-cara-item" [class.menu-abierto]="caraMenuAbierto() === item.id">
+            <button
+              type="button"
+              class="resumen-cara-pill"
+              [class.activa]="caraActivaId() === item.id"
+              [class.con-hallazgo]="item.tieneHallazgo"
+              [attr.aria-expanded]="caraMenuAbierto() === item.id"
+              aria-haspopup="listbox"
+              (click)="onClickEtiquetaCara(item.id, $event)">
+              <span class="pill-dot" [style.background-color]="item.colorHex || '#22c55e'"></span>
+              <span class="pill-nombre">{{ item.etiquetaVisual }}:</span>
+              <strong class="pill-estado">{{ item.estado }}</strong>
+              <span class="pill-chevron" aria-hidden="true">{{ caraMenuAbierto() === item.id ? '▴' : '▾' }}</span>
+            </button>
+
+            @if (caraMenuAbierto() === item.id) {
+              <div
+                class="estados-dropdown"
+                role="listbox"
+                [attr.aria-label]="'Estados clínicos disponibles para ' + item.etiquetaVisual">
+                @for (opcion of estadosCatalogo; track opcion.estado) {
+                  <button
+                    type="button"
+                    role="option"
+                    class="estado-opcion-btn"
+                    [class.seleccionado]="item.estado === opcion.estado"
+                    [attr.aria-selected]="item.estado === opcion.estado"
+                    (click)="seleccionarEstadoParaCara(item.id, opcion.estado, $event)">
+                    <span class="estado-opcion-dot" [style.background-color]="opcion.colorHex"></span>
+                    <span class="estado-opcion-texto">{{ opcion.estado }}</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
         }
+      </div>
+
+      <div class="estado-cara-acciones">
+        <button
+          type="button"
+          class="btn-actualizar-cara"
+          (click)="guardarCambiosDiente()">
+          Actualizar información
+        </button>
       </div>
 
       <div class="leyenda-cara">

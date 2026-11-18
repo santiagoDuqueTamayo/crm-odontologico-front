@@ -13,10 +13,20 @@ import {
   ViewChild
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { CarasDiente, DienteData } from '../../models/odontograma.models';
+import {
+  ActualizarDienteRequest,
+  CarasDiente,
+  CaraVisual,
+  CATALOGO_ESTADOS_CLINICOS,
+  construirDienteActualizado,
+  DienteData,
+  OpcionEstadoClinico,
+  resolverColorPorEstadoClinico,
+  SuperficieDentalId
+} from '../../models/odontograma.models';
 import type * as THREE from 'three';
 
-export type CaraDienteId = keyof CarasDiente;
+export type CaraDienteId = SuperficieDentalId;
 type TipoParte3d = 'corona' | 'raiz';
 
 const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set<string>([
@@ -63,17 +73,101 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   readonly diente = input.required<DienteData>();
   readonly caraSeleccionada = input<CaraDienteId | null>(null);
   readonly caraClickeada = output<CaraDienteId>();
+  readonly actualizarDiente = output<ActualizarDienteRequest>();
+
   readonly estadoVisor3d = signal<'cargando' | 'listo' | 'alternativa' | 'error'>('cargando');
   readonly numeroModelo = signal<number | null>(null);
   readonly errorVisor3d = signal('');
+  readonly caraMenuAbierto = signal<CaraDienteId | null>(null);
+  readonly estadosCatalogo: readonly OpcionEstadoClinico[] = CATALOGO_ESTADOS_CLINICOS;
 
-  readonly caraActiva = computed(() => {
-    const id = this.caraSeleccionada();
-    return id ? this.diente().caras[id] : null;
+  private readonly caraSeleccionadaInterna = signal<{
+    dienteNumero: number;
+    cara: CaraDienteId | null;
+  } | null>(null);
+
+  private readonly cambiosPendientes = signal<{
+    dienteReferencia: DienteData;
+    cambios: Partial<Record<CaraDienteId, string>>;
+  } | null>(null);
+
+  private readonly edicionConfirmada = signal<{
+    dienteReferencia: DienteData;
+    dienteActualizado: DienteData;
+  } | null>(null);
+
+  /**
+   * Diente efectivo confirmado (refleja el input actual o la última actualización guardada).
+   */
+  readonly dienteEfectivo = computed<DienteData>(() => {
+    const entrada = this.diente();
+    const confirmada = this.edicionConfirmada();
+    if (confirmada && confirmada.dienteReferencia === entrada) {
+      return confirmada.dienteActualizado;
+    }
+    return entrada;
+  });
+
+  /**
+   * Cara actualmente activa (prioriza el input externo si se provee o la selección interna).
+   */
+  readonly caraActivaId = computed<CaraDienteId | null>(() => {
+    const externa = this.caraSeleccionada();
+    if (externa !== null) {
+      return externa;
+    }
+    const interna = this.caraSeleccionadaInterna();
+    if (interna && interna.dienteNumero === this.diente().numero) {
+      return interna.cara;
+    }
+    return null;
+  });
+
+  /**
+   * Estado en borrador de las 5 caras coronales y la raíz antes de presionar "Actualizar información".
+   */
+  readonly borradorCaras = computed<Record<CaraDienteId, string>>(() => {
+    const actual = this.dienteEfectivo();
+    const pendientes = this.cambiosPendientes();
+    const cambios =
+      pendientes && pendientes.dienteReferencia === this.diente() ? pendientes.cambios : {};
+    const estadoRaizBase = this.obtenerEstadoInicialRaiz(actual);
+
+    return {
+      vestibular: cambios.vestibular ?? actual.caras.vestibular.estado,
+      palatino_lingual: cambios.palatino_lingual ?? actual.caras.palatino_lingual.estado,
+      mesial: cambios.mesial ?? actual.caras.mesial.estado,
+      distal: cambios.distal ?? actual.caras.distal.estado,
+      oclusal_incisal: cambios.oclusal_incisal ?? actual.caras.oclusal_incisal.estado,
+      raiz: cambios.raiz ?? estadoRaizBase
+    };
+  });
+
+  readonly caraActiva = computed<CaraVisual | null>(() => {
+    const id = this.caraActivaId();
+    if (!id) {
+      return null;
+    }
+    const pieza = this.dienteEfectivo();
+    const estadoBorrador = this.borradorCaras()[id];
+    const etiquetaVisual =
+      id === 'raiz'
+        ? pieza.raiz?.etiquetaVisual || 'Raíz'
+        : pieza.caras[id]?.etiquetaVisual || id;
+    const colorOriginal =
+      id === 'raiz' ? pieza.raiz?.colorHex ?? null : pieza.caras[id]?.colorHex ?? null;
+
+    return {
+      etiquetaVisual,
+      estado: estadoBorrador,
+      colorHex: this.esEstadoSanoOPresente(estadoBorrador)
+        ? null
+        : resolverColorPorEstadoClinico(estadoBorrador, colorOriginal)
+    };
   });
 
   readonly tituloPieza = computed(() => {
-    const actual = this.diente();
+    const actual = this.dienteEfectivo();
     const numStr = String(actual.numero);
     if (actual.nombreColoquial.includes(numStr)) {
       return actual.nombreColoquial;
@@ -82,30 +176,39 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   });
 
   readonly resumenCaras = computed(() => {
-    const caras = this.diente().caras;
+    const pieza = this.dienteEfectivo();
+    const caras = pieza.caras;
+    const borrador = this.borradorCaras();
     const ids: CaraDienteId[] = [
       'vestibular',
       'palatino_lingual',
       'mesial',
       'distal',
-      'oclusal_incisal'
+      'oclusal_incisal',
+      'raiz'
     ];
-    return ids.map((id) => ({
-      id,
-      etiquetaVisual: caras[id].etiquetaVisual,
-      estado: caras[id].estado,
-      colorHex: this.colorBadgeCara(id),
-      tieneHallazgo: !this.esEstadoSanoOPresente(caras[id].estado)
-    }));
+    return ids.map((id) => {
+      const etiquetaVisual =
+        id === 'raiz' ? pieza.raiz?.etiquetaVisual || 'Raíz' : caras[id].etiquetaVisual;
+      const estado = borrador[id];
+      const colorHex = this.colorBadgeCara(id);
+      return {
+        id,
+        etiquetaVisual,
+        estado,
+        colorHex,
+        tieneHallazgo: !this.esEstadoSanoOPresente(estado)
+      };
+    });
   });
 
   @ViewChild('visor3d') private visor3d?: ElementRef<HTMLDivElement>;
 
   private readonly platformId = inject(PLATFORM_ID);
   private readonly aparienciaEffect = effect(() => {
-    const pieza = this.diente();
+    const pieza = this.dienteEfectivo();
     const numero = pieza.numero;
-    this.caraSeleccionada();
+    this.caraActivaId();
     if (this.three && this.toothGroup && this.numeroModelo() !== numero) {
       this.limpiarModelo();
       this.crearDiente3d();
@@ -201,7 +304,74 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   }
 
   seleccionarCara(cara: CaraDienteId): void {
+    this.caraSeleccionadaInterna.set({
+      dienteNumero: this.diente().numero,
+      cara
+    });
     this.caraClickeada.emit(cara);
+  }
+
+  /**
+   * Abre o cierra la lista desplegable de estados clínicos al hacer clic sobre la etiqueta/botón de una cara.
+   */
+  onClickEtiquetaCara(cara: CaraDienteId, event?: Event): void {
+    event?.stopPropagation();
+    this.seleccionarCara(cara);
+    this.caraMenuAbierto.update((actual) => (actual === cara ? null : cara));
+  }
+
+  /**
+   * Asigna un nuevo estado clínico en el borrador para la cara o raíz indicada y cierra el desplegable.
+   */
+  seleccionarEstadoParaCara(cara: CaraDienteId, nuevoEstado: string, event?: Event): void {
+    event?.stopPropagation();
+    const referencia = this.diente();
+    const previos =
+      this.cambiosPendientes()?.dienteReferencia === referencia
+        ? this.cambiosPendientes()!.cambios
+        : {};
+
+    this.cambiosPendientes.set({
+      dienteReferencia: referencia,
+      cambios: {
+        ...previos,
+        [cara]: nuevoEstado
+      }
+    });
+    this.caraMenuAbierto.set(null);
+  }
+
+  /**
+   * Confirma y aplica los cambios de estado de las caras y la raíz, actualizando el modelo 3D
+   * y emitiendo la solicitud hacia el componente padre / servicio para actualizar el odontograma.
+   */
+  guardarCambiosDiente(): void {
+    const borrador = this.borradorCaras();
+    const request: ActualizarDienteRequest = {
+      numeroDiente: this.diente().numero,
+      caras: {
+        vestibular: borrador.vestibular,
+        palatino_lingual: borrador.palatino_lingual,
+        mesial: borrador.mesial,
+        distal: borrador.distal,
+        oclusal_incisal: borrador.oclusal_incisal
+      },
+      raiz: borrador.raiz
+    };
+
+    const dienteActualizado = construirDienteActualizado(
+      this.dienteEfectivo(),
+      request.caras,
+      request.raiz
+    );
+
+    this.edicionConfirmada.set({
+      dienteReferencia: this.diente(),
+      dienteActualizado
+    });
+    this.caraMenuAbierto.set(null);
+    this.actualizarColores();
+    this.actualizarDiente.emit(request);
   }
 
   onCaraKeydown(cara: CaraDienteId, evento: KeyboardEvent): void {
@@ -211,9 +381,18 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  colorCaraSvg(face: CaraDienteId): string {
-    const cara = this.diente().caras[face];
+  colorCaraSvg(face: keyof CarasDiente): string {
+    const pieza = this.dienteEfectivo();
+    const cara = pieza.caras[face];
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+
+    if (pieza.raiz !== undefined) {
+      if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+        return resolverColorPorEstadoClinico(cara.estado, cara.colorHex);
+      }
+      return '#fffdf5';
+    }
+
     if (
       cara &&
       !this.esEstadoSanoOPresente(cara.estado) &&
@@ -223,7 +402,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     ) {
       return cara.colorHex;
     }
-    const estadoGeneral = this.diente().estadoGeneral;
+    const estadoGeneral = pieza.estadoGeneral;
     if (
       estadoGeneral &&
       !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
@@ -237,8 +416,17 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   }
 
   colorRaizSvg(): string {
-    const estadoGeneral = this.diente().estadoGeneral;
+    const pieza = this.dienteEfectivo();
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+
+    if (pieza.raiz !== undefined) {
+      if (!this.esEstadoSanoOPresente(pieza.raiz.estado)) {
+        return resolverColorPorEstadoClinico(pieza.raiz.estado, pieza.raiz.colorHex);
+      }
+      return '#f5f0e5';
+    }
+
+    const estadoGeneral = pieza.estadoGeneral;
     if (
       estadoGeneral &&
       this.afectaRaiz(estadoGeneral.estado) &&
@@ -251,15 +439,36 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
   }
 
   colorBadgeCara(face: CaraDienteId): string | null {
-    const cara = this.diente().caras[face];
+    const pieza = this.dienteEfectivo();
+    const estadoBorrador = this.borradorCaras()[face];
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
+
+    if (face === 'raiz') {
+      if (this.esEstadoSanoOPresente(estadoBorrador)) {
+        return null;
+      }
+      return resolverColorPorEstadoClinico(estadoBorrador, pieza.raiz?.colorHex ?? null);
+    }
+
+    const cara = pieza.caras[face];
+    const tieneCambioPendiente =
+      this.cambiosPendientes()?.dienteReferencia === this.diente() &&
+      this.cambiosPendientes()?.cambios[face] !== undefined;
+
+    if (tieneCambioPendiente || pieza.raiz !== undefined) {
+      if (this.esEstadoSanoOPresente(estadoBorrador)) {
+        return null;
+      }
+      return resolverColorPorEstadoClinico(estadoBorrador, null);
+    }
+
     if (!cara || this.esEstadoSanoOPresente(cara.estado) || this.esEstadoExclusivoDeRaiz(cara.estado)) {
       return null;
     }
     if (cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
       return cara.colorHex;
     }
-    return cara.colorHex;
+    return resolverColorPorEstadoClinico(cara.estado, cara.colorHex);
   }
 
   iniciarRotacion(event: PointerEvent): void {
@@ -307,6 +516,16 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     this.actualizarCamara();
   }
 
+  private obtenerEstadoInicialRaiz(pieza: DienteData): string {
+    if (pieza.raiz?.estado) {
+      return pieza.raiz.estado;
+    }
+    if (this.afectaRaiz(pieza.estadoGeneral?.estado)) {
+      return pieza.estadoGeneral.estado;
+    }
+    return 'Sano';
+  }
+
   private esEstadoSanoOPresente(estado: string | null | undefined): boolean {
     if (!estado) return true;
     const norm = estado.trim().toLowerCase();
@@ -328,7 +547,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     const three = this.three;
     if (!this.toothGroup || !this.regionLines || !three) return;
 
-    const numero = this.diente().numero;
+    const numero = this.dienteEfectivo().numero;
     const ultimoDigito = numero % 10;
     this.agregarParte(this.crearGeometriaCorona(three, numero), 'corona');
     this.crearLineasRegionales(three, numero);
@@ -546,17 +765,19 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     );
     const raycaster = new three.Raycaster();
     raycaster.setFromCamera(pointer, this.camera);
-    const crownMeshes = this.toothGroup.children.filter(
-      (child) => child.userData?.['tipoParte'] === 'corona'
-    );
-    const [hit] = raycaster.intersectObjects(crownMeshes, false);
+    const [hit] = raycaster.intersectObjects(this.toothGroup.children, false);
     if (!hit) return;
+
+    if (hit.object.userData?.['tipoParte'] === 'raiz') {
+      this.seleccionarCara('raiz');
+      return;
+    }
 
     const localPoint = this.toothGroup.worldToLocal(hit.point.clone());
     this.seleccionarCara(this.superficieEn(localPoint));
   }
 
-  private superficieEn(point: THREE.Vector3): CaraDienteId {
+  private superficieEn(point: THREE.Vector3): keyof CarasDiente {
     if (point.y > 0.82) return 'oclusal_incisal';
     if (Math.abs(point.z) >= Math.abs(point.x)) {
       return point.z >= 0 ? 'vestibular' : 'palatino_lingual';
@@ -564,49 +785,72 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     return point.x >= 0 ? 'distal' : 'mesial';
   }
 
-  private colorSuperficie(face: CaraDienteId, three: typeof import('three')): THREE.Color {
-    const cara = this.diente().caras[face];
-    const esSana = this.esEstadoSanoOPresente(cara?.estado) || this.esEstadoExclusivoDeRaiz(cara?.estado);
-    const clinicalColor = cara?.colorHex?.toLowerCase();
+  private colorSuperficie(face: keyof CarasDiente, three: typeof import('three')): THREE.Color {
+    const pieza = this.dienteEfectivo();
+    const cara = pieza.caras[face];
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
 
     let hexElegido = '#e9ddc6';
-    if (!esSana && clinicalColor && !coloresNeutros.has(clinicalColor)) {
-      hexElegido = clinicalColor;
-    } else if (esSana) {
-      const estadoGeneral = this.diente().estadoGeneral;
-      if (
-        estadoGeneral &&
-        !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
-        !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
-        estadoGeneral.colorHex &&
-        !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
-      ) {
-        hexElegido = estadoGeneral.colorHex;
+
+    if (pieza.raiz !== undefined) {
+      if (cara && !this.esEstadoSanoOPresente(cara.estado)) {
+        hexElegido = resolverColorPorEstadoClinico(cara.estado, cara.colorHex);
+      }
+    } else {
+      const esSana =
+        this.esEstadoSanoOPresente(cara?.estado) || this.esEstadoExclusivoDeRaiz(cara?.estado);
+      const clinicalColor = cara?.colorHex?.toLowerCase();
+
+      if (!esSana && clinicalColor && !coloresNeutros.has(clinicalColor)) {
+        hexElegido = clinicalColor;
+      } else if (esSana) {
+        const estadoGeneral = pieza.estadoGeneral;
+        if (
+          estadoGeneral &&
+          !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
+          !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
+          estadoGeneral.colorHex &&
+          !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
+        ) {
+          hexElegido = estadoGeneral.colorHex;
+        }
       }
     }
 
     const color = new three.Color(hexElegido);
-    if (this.caraSeleccionada() === face) {
+    if (this.caraActivaId() === face) {
       color.lerp(new three.Color('#55a978'), 0.4);
     }
     return color;
   }
 
   private colorRaiz3d(three: typeof import('three')): THREE.Color {
-    const estadoGeneral = this.diente().estadoGeneral;
+    const pieza = this.dienteEfectivo();
     const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
 
-    if (
-      estadoGeneral &&
-      this.afectaRaiz(estadoGeneral.estado) &&
-      estadoGeneral.colorHex &&
-      !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
-    ) {
-      return new three.Color(estadoGeneral.colorHex);
+    let hexRaiz = '#e2d5bc';
+
+    if (pieza.raiz !== undefined) {
+      if (!this.esEstadoSanoOPresente(pieza.raiz.estado)) {
+        hexRaiz = resolverColorPorEstadoClinico(pieza.raiz.estado, pieza.raiz.colorHex);
+      }
+    } else {
+      const estadoGeneral = pieza.estadoGeneral;
+      if (
+        estadoGeneral &&
+        this.afectaRaiz(estadoGeneral.estado) &&
+        estadoGeneral.colorHex &&
+        !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
+      ) {
+        hexRaiz = estadoGeneral.colorHex;
+      }
     }
 
-    return new three.Color('#e2d5bc');
+    const color = new three.Color(hexRaiz);
+    if (this.caraActivaId() === 'raiz') {
+      color.lerp(new three.Color('#55a978'), 0.4);
+    }
+    return color;
   }
 
   private actualizarColores(): void {

@@ -106,6 +106,47 @@ describe('DetallePiezaComponent', () => {
     expect(component.colorCaraSvg('vestibular')).toBe('#D946EF');
     expect(component.colorCaraSvg('distal')).toBe('#D946EF');
   });
+
+  it('should open the clinical states dropdown with colored dots when clicking a face button and update on save', () => {
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const pills = el.querySelectorAll('.resumen-cara-pill');
+    expect(pills).toHaveLength(6); // 5 caras + Raíz
+
+    // Clic sobre la etiqueta de Distal
+    const distalPill = [...pills].find((btn) => btn.textContent?.includes('Distal')) as HTMLButtonElement;
+    expect(distalPill).toBeTruthy();
+    distalPill.click();
+    fixture.detectChanges();
+
+    const dropdown = el.querySelector('.estados-dropdown');
+    expect(dropdown).toBeTruthy();
+    const opciones = dropdown?.querySelectorAll('.estado-opcion-btn') ?? [];
+    expect(opciones.length).toBeGreaterThan(10);
+    expect(dropdown?.querySelector('.estado-opcion-dot')).toBeTruthy();
+
+    // Seleccionar Restaurado (#3B82F6) para Distal
+    const opcionRestaurado = [...opciones].find((opt) =>
+      opt.textContent?.trim() === 'Restaurado'
+    ) as HTMLButtonElement;
+    opcionRestaurado.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.estados-dropdown')).toBeNull();
+    expect(distalPill.textContent).toContain('Restaurado');
+
+    // Clic en el botón "Actualizar información" dentro de .estado-cara
+    const onActualizar = vi.fn();
+    fixture.componentInstance.actualizarDiente.subscribe(onActualizar);
+
+    const btnGuardar = el.querySelector('.estado-cara .btn-actualizar-cara') as HTMLButtonElement;
+    expect(btnGuardar).toBeTruthy();
+    btnGuardar.click();
+    fixture.detectChanges();
+
+    expect(onActualizar).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.colorCaraSvg('distal')).toBe('#3B82F6');
+  });
 });
 
 function crearDiente(numero = 11): DienteData {

@@ -12,10 +12,6 @@
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.5 3.5c-2.6 0-4 2.1-3.5 5.3l1.5 9c.4 2.4 2.2 3.4 3.3 1.1l2-4.1c.5-1 1.4-1 1.9 0l2 4.1c1.1 2.3 2.9 1.3 3.3-1.1l1.5-9c.5-3.2-.9-5.3-3.5-5.3-1.8 0-2.5 1-4.2 1s-2.5-1-4.3-1Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
         <span>Odontograma</span>
       </button>
-      <button class="side-nav-link" type="button" (click)="irANotaClinica()">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 3.75h7l4 4v12.5H7a2 2 0 0 1-2-2v-12.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 4v4h4M8.5 12h7m-7 3h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <span>Nota clínica</span>
-      </button>
       <button class="side-nav-link" type="button" [class.active]="vistaActual() === 'paciente'" [attr.aria-current]="vistaActual() === 'paciente' ? 'page' : null" (click)="mostrarPaciente()">
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0M18 8h4m-2-2v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Paciente</span>
@@ -79,16 +75,32 @@
             </div>
           </div>
 
+          @if (mensajeConfirmacionEdicion(); as confirmacion) {
+            <div class="alerta-confirmacion-edicion" role="status" aria-live="polite">
+              <span class="confirmacion-icono" aria-hidden="true">✓</span>
+              <p class="confirmacion-texto">{{ confirmacion }}</p>
+              <button
+                type="button"
+                class="confirmacion-cerrar"
+                aria-label="Cerrar mensaje de confirmación"
+                (click)="cerrarMensajeConfirmacion()">
+                ✕
+              </button>
+            </div>
+          }
+
           @if (dienteSeleccionado(); as pieza) {
-            <app-detalle-pieza
+            <app-modal-detalle-diente
               [diente]="pieza"
               [caraSeleccionada]="caraSeleccionada()"
-              (caraClickeada)="onCaraSeleccionada($event)">
-            </app-detalle-pieza>
+              (caraClickeada)="onCaraSeleccionada($event)"
+              (actualizarDiente)="onActualizarDiente($event)"
+              (cerrar)="onCerrarModalDiente()">
+            </app-modal-detalle-diente>
           } @else {
             <div class="select-tooth-hint">
               <span aria-hidden="true">⌖</span>
-              <p>Selecciona un diente para explorar sus cinco superficies.</p>
+              <p>Selecciona un diente para abrir su detalle 3D y editar sus superficies.</p>
             </div>
           }
         </section>

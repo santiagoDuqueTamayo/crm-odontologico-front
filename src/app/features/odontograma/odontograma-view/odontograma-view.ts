@@ -1,11 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { OdontogramaGridComponent } from '../components/odontograma-grid/odontograma-grid';
-import { DetallePiezaComponent, CaraDienteId } from '../components/detalle-pieza/detalle-pieza';
+import { CaraDienteId } from '../components/detalle-pieza/detalle-pieza';
+import { ModalDetalleDienteComponent } from '../components/modal-detalle-diente/modal-detalle-diente';
 import { NotaClinicaComponent } from '../components/nota-clinica/nota-clinica';
 import { PacienteFormComponent } from '../components/paciente-form/paciente-form';
 import { crearPacienteVacio, DatosPaciente } from '../models/paciente.models';
 import {
+  ActualizarDienteRequest,
   CarasDiente,
   DienteData,
   OdontogramaUpdateResponse
@@ -15,7 +17,7 @@ import { OdontogramaApiService } from '../services/odontograma-api.service';
 @Component({
   selector: 'app-odontograma-view',
   standalone: true,
-  imports: [OdontogramaGridComponent, DetallePiezaComponent, NotaClinicaComponent, PacienteFormComponent],
+  imports: [OdontogramaGridComponent, ModalDetalleDienteComponent, NotaClinicaComponent, PacienteFormComponent],
   templateUrl: './odontograma-view.html',
   styleUrl: './odontograma-view.scss'
 })
@@ -40,6 +42,8 @@ export class OdontogramaViewComponent {
   readonly procesandoDictado = signal(false);
   readonly errorDictado = signal<string | null>(null);
   readonly resumenActualizacion = signal<string | null>(null);
+  readonly mensajeConfirmacionEdicion = signal<string | null>(null);
+  private temporizadorConfirmacion: ReturnType<typeof setTimeout> | null = null;
 
   mostrarOdontograma(): void {
     this.vistaActual.set('odontograma');
@@ -49,20 +53,56 @@ export class OdontogramaViewComponent {
     this.vistaActual.set('paciente');
   }
 
-  irANotaClinica(): void {
-    this.mostrarOdontograma();
-    setTimeout(() => document.getElementById('nota-clinica')?.scrollIntoView({ behavior: 'smooth' }));
-  }
-
   onDienteSeleccionado(numero: number): void {
     this.numeroSeleccionado.set(numero);
     this.caraSeleccionada.set(null);
     this.consultaFinalizada.set(false);
   }
 
+  onCerrarModalDiente(): void {
+    this.numeroSeleccionado.set(null);
+    this.caraSeleccionada.set(null);
+  }
+
+  cerrarMensajeConfirmacion(): void {
+    if (this.temporizadorConfirmacion) {
+      clearTimeout(this.temporizadorConfirmacion);
+      this.temporizadorConfirmacion = null;
+    }
+    this.mensajeConfirmacionEdicion.set(null);
+  }
+
   onCaraSeleccionada(cara: CaraDienteId): void {
     this.caraSeleccionada.set(cara);
     this.consultaFinalizada.set(false);
+  }
+
+  onActualizarDiente(request: ActualizarDienteRequest): void {
+    const dienteActual = this.dientes().find((pieza) => pieza.numero === request.numeroDiente);
+    if (!dienteActual) {
+      return;
+    }
+
+    this.odontogramaApi
+      .actualizarCarasDiente(this.odontogramaId(), dienteActual, request)
+      .subscribe((response) => {
+        this.aplicarRespuestaBackend(response);
+        this.onCerrarModalDiente();
+        this.mostrarConfirmacionEdicion(
+          `Se ha actualizado correctamente el estado del diente ${request.numeroDiente}.`
+        );
+      });
+  }
+
+  private mostrarConfirmacionEdicion(mensaje: string): void {
+    if (this.temporizadorConfirmacion) {
+      clearTimeout(this.temporizadorConfirmacion);
+    }
+    this.mensajeConfirmacionEdicion.set(mensaje);
+    this.temporizadorConfirmacion = setTimeout(() => {
+      this.mensajeConfirmacionEdicion.set(null);
+      this.temporizadorConfirmacion = null;
+    }, 4500);
   }
 
   onNotaCambiada(nota: string): void {
@@ -106,7 +146,7 @@ export class OdontogramaViewComponent {
 
   /**
    * Fusiona los dientes actualizados provenientes del Backend sobre las 32 piezas del odontograma
-   * y enfoca automáticamente el primer diente y superficie con hallazgos.
+   * para pintar sus estados en el diagrama sin abrir ningún modal por defecto.
    */
   aplicarRespuestaBackend(response: OdontogramaUpdateResponse): void {
     if (response.odontogramaId) {
@@ -131,20 +171,26 @@ export class OdontogramaViewComponent {
       actuales.map((pieza) => mapaActualizados.get(pieza.numero) ?? pieza)
     );
 
-    const primerDiente = dientesRecibidos[0];
-    this.numeroSeleccionado.set(primerDiente.numero);
-    this.caraSeleccionada.set(this.primeraCaraConHallazgo(primerDiente));
-
-    const numerosModificados = dientesRecibidos.map((d) => d.numero).join(', ');
+    const dientesConHallazgo = dientesRecibidos.filter(
+      (d) => this.primeraCaraConHallazgo(d) !== null || !this.esEstadoSanoOPresente(d.estadoGeneral?.estado)
+    );
+    const reportados = dientesConHallazgo.length > 0 ? dientesConHallazgo : dientesRecibidos;
+    const numerosModificados = reportados.map((d) => d.numero).join(', ');
     this.resumenActualizacion.set(
-      `Odontograma actualizado (${dientesRecibidos.length} ${
-        dientesRecibidos.length === 1 ? 'pieza modificada' : 'piezas modificadas'
+      `Odontograma actualizado (${reportados.length} ${
+        reportados.length === 1 ? 'pieza modificada' : 'piezas modificadas'
       }: ${numerosModificados}).`
     );
   }
 
+  private esEstadoSanoOPresente(estado: string | null | undefined): boolean {
+    if (!estado) return true;
+    const norm = estado.trim().toLowerCase();
+    return norm === 'sano' || norm === 'presente';
+  }
+
   private primeraCaraConHallazgo(diente: DienteData): CaraDienteId | null {
-    const orden: CaraDienteId[] = [
+    const orden: Array<keyof CarasDiente> = [
       'oclusal_incisal',
       'vestibular',
       'mesial',
@@ -156,6 +202,10 @@ export class OdontogramaViewComponent {
       if (estado && estado !== 'sano' && estado !== 'presente') {
         return id;
       }
+    }
+    const estadoRaiz = diente.raiz?.estado?.trim().toLowerCase();
+    if (estadoRaiz && estadoRaiz !== 'sano' && estadoRaiz !== 'presente') {
+      return 'raiz';
     }
     return null;
   }
