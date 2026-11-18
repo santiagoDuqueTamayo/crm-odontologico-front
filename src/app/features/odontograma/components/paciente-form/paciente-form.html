@@ -75,4 +75,19 @@
     El audio se envía a Groq Cloud para su transcripción. La ficha solo permanece en esta sesión
     del navegador; no se guarda en una base de datos.
   </p>
+
+  <div class="patient-actions">
+    @if (mensajeExportacion()) {
+      <span
+        class="export-message"
+        [class.export-error]="mensajeExportacion().startsWith('No se pudo')"
+        role="status"
+        aria-live="polite">
+        {{ mensajeExportacion() }}
+      </span>
+    }
+    <button class="button button-secondary" type="button" (click)="exportarPdf()">
+      Exportar ficha en PDF
+    </button>
+  </div>
 </section>

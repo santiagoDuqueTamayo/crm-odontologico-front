@@ -212,6 +212,24 @@ h2 {
   line-height: 1.5;
 }
 
+.patient-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 15px 22px 0;
+}
+
+.export-message {
+  color: #17664f;
+  font-size: 11px;
+}
+
+.export-error {
+  color: #a53d3d;
+}
+
 @media (max-width: 760px) {
   .patient-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -248,6 +266,11 @@ h2 {
   }
 
   .patient-privacy {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+
+  .patient-actions {
     margin-right: 14px;
     margin-left: 14px;
   }

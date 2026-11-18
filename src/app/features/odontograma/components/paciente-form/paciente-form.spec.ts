@@ -4,6 +4,26 @@ import { OdontogramaApiService } from '../../services/odontograma-api.service';
 import { SpeechTranscriptionService } from '../../services/speech-transcription.service';
 import { PacienteFormComponent } from './paciente-form';
 
+const { pdfMock, jsPdfMock } = vi.hoisted(() => {
+  const pdf = {
+    internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
+    setProperties: vi.fn(),
+    setFillColor: vi.fn(),
+    rect: vi.fn(),
+    setTextColor: vi.fn(),
+    setFont: vi.fn(),
+    setFontSize: vi.fn(),
+    text: vi.fn(),
+    roundedRect: vi.fn(),
+    splitTextToSize: vi.fn((text: string) => [text]),
+    addPage: vi.fn(),
+    save: vi.fn()
+  };
+  return { pdfMock: pdf, jsPdfMock: vi.fn(function () { return pdf; }) };
+});
+
+vi.mock('jspdf', () => ({ jsPDF: jsPdfMock }));
+
 describe('PacienteFormComponent', () => {
   let fixture: ComponentFixture<PacienteFormComponent>;
   let component: PacienteFormComponent;
@@ -61,6 +81,22 @@ describe('PacienteFormComponent', () => {
 
     expect(component.paciente().nombres).toBe('María José');
     expect(fixture.nativeElement.textContent).toContain('Antecedentes odontológicos');
+  });
+
+  it('should export the patient details as a PDF', async () => {
+    fixture.detectChanges();
+
+    const exportButton = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (button: HTMLButtonElement) => button.textContent?.includes('Exportar ficha en PDF')
+    );
+    if (!exportButton) throw new Error('PDF export button was not rendered');
+    exportButton.click();
+    await fixture.whenStable();
+
+    expect(jsPdfMock).toHaveBeenCalledOnce();
+    expect(pdfMock.text).toHaveBeenCalledWith('Datos personales', 21, 52);
+    expect(pdfMock.save).toHaveBeenCalledWith('ficha-paciente.pdf');
+    expect(fixture.nativeElement.textContent).toContain('La ficha del paciente se descargó en PDF.');
   });
 
   it('should transcribe all patient details and distribute them into the matching fields', async () => {

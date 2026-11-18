@@ -21,6 +21,7 @@ export class PacienteFormComponent implements OnDestroy {
   protected readonly iniciandoGrabacion = signal(false);
   protected readonly transcribiendo = signal(false);
   protected readonly mensajeEstado = signal('');
+  protected readonly mensajeExportacion = signal('');
   protected readonly transcripcion = signal('');
 
   protected readonly campos: ReadonlyArray<{ id: CampoPaciente; label: string; multiline?: boolean }> = [
@@ -49,6 +50,129 @@ export class PacienteFormComponent implements OnDestroy {
   protected actualizarCampo(campo: CampoPaciente, evento: Event): void {
     const valor = (evento.target as HTMLInputElement | HTMLTextAreaElement).value;
     this.paciente.update((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  protected async exportarPdf(): Promise<void> {
+    this.mensajeExportacion.set('');
+
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF();
+      const anchoPagina = pdf.internal.pageSize.getWidth();
+      const altoPagina = pdf.internal.pageSize.getHeight();
+      const margen = 18;
+      const anchoContenido = anchoPagina - margen * 2;
+      const paciente = this.paciente();
+      let posicionY = 20;
+
+      pdf.setProperties({ title: 'Ficha del paciente', subject: 'Datos del paciente' });
+      pdf.setFillColor(23, 102, 79);
+      pdf.rect(0, 0, anchoPagina, 34, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.text('Ficha del paciente', margen, 16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text(
+        `${paciente.nombres} ${paciente.apellidos}`.trim() || 'Paciente sin nombre',
+        margen,
+        25
+      );
+      pdf.setFontSize(9);
+      pdf.text(`Generada: ${new Date().toLocaleDateString('es-CO')}`, anchoPagina - margen, 25, {
+        align: 'right'
+      });
+      posicionY = 46;
+
+      const secciones: ReadonlyArray<{
+        titulo: string;
+        campos: ReadonlyArray<{ id: CampoPaciente; label: string }>;
+      }> = [
+        {
+          titulo: 'Datos personales',
+          campos: this.campos.filter((campo) =>
+            ['nombres', 'apellidos', 'identificacion', 'edad', 'genero', 'ocupacion'].includes(
+              campo.id
+            )
+          )
+        },
+        {
+          titulo: 'Información de contacto',
+          campos: this.campos.filter((campo) =>
+            ['telefono', 'correo', 'direccion', 'aseguradora', 'contactoEmergencia'].includes(
+              campo.id
+            )
+          )
+        },
+        {
+          titulo: 'Información clínica',
+          campos: this.campos.filter((campo) =>
+            ['alergias', 'medicamentos', 'antecedentesMedicos', 'antecedentesOdontologicos'].includes(
+              campo.id
+            )
+          )
+        }
+      ];
+
+      for (const seccion of secciones) {
+        if (posicionY + 13 > altoPagina - margen) {
+          pdf.addPage();
+          posicionY = margen;
+        }
+
+        pdf.setFillColor(229, 244, 236);
+        pdf.roundedRect(margen, posicionY, anchoContenido, 9, 2, 2, 'F');
+        pdf.setTextColor(23, 102, 79);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text(seccion.titulo, margen + 3, posicionY + 6);
+        posicionY += 15;
+
+        for (const campo of seccion.campos) {
+          const valor = paciente[campo.id].trim() || 'No registrado';
+          const lineas = pdf.splitTextToSize(valor, anchoContenido);
+
+          if (posicionY + 11 > altoPagina - margen) {
+            pdf.addPage();
+            posicionY = margen;
+          }
+
+          pdf.setTextColor(83, 107, 96);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.text(campo.label, margen, posicionY);
+          posicionY += 5;
+
+          pdf.setTextColor(25, 59, 50);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(10);
+          for (const linea of lineas) {
+            if (posicionY + 5 > altoPagina - margen) {
+              pdf.addPage();
+              posicionY = margen;
+            }
+            pdf.text(linea, margen, posicionY);
+            posicionY += 5;
+          }
+          posicionY += 5;
+        }
+
+        posicionY += 3;
+      }
+
+      const nombreArchivo = `${paciente.nombres}-${paciente.apellidos}`
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase() || 'paciente';
+      pdf.save(`ficha-${nombreArchivo}.pdf`);
+      this.mensajeExportacion.set('La ficha del paciente se descargó en PDF.');
+    } catch (error) {
+      console.error('No se pudo exportar la ficha del paciente a PDF.', error);
+      this.mensajeExportacion.set('No se pudo generar el PDF. Inténtalo de nuevo.');
+    }
   }
 
   protected async iniciarDictado(): Promise<void> {
