@@ -30,9 +30,10 @@ usa `https://crm-odontologico-backend-qpca.onrender.com` por defecto; puedes sob
 con `JAVA_API_BASE_URL` en el entorno del proceso SSR. El proxy espera hasta 5 minutos por respuesta; puedes cambiarlo con
 `JAVA_API_TIMEOUT_MS` (milisegundos, por defecto `300000`). Configura también el proxy del hosting
 para enrutar `/api/v1` al backend Java si el navegador accede al frontend por otro servidor sin usar
-el proxy SSR. El proxy SSR reintenta hasta tres veces errores transitorios de conexión, con esperas
-de 10, 20 y 30 segundos, para dar tiempo a que un servicio gratuito despierte. No reintenta
-respuestas HTTP ni timeouts de procesamiento de IA. Los
+el proxy SSR. El proxy SSR reintenta hasta tres veces errores transitorios de conexión y respuestas
+de gateway HTML 502/503/504 (incluidos los encabezados de enrutamiento de Render), con esperas de
+10, 20 y 30 segundos, para dar tiempo a que un servicio gratuito despierte. No reintenta respuestas
+de la API en formato JSON ni timeouts de procesamiento de IA. Los
 túneles y gateways, como el de Codespaces, pueden imponer un límite menor y devolver `504` antes
 de que venza este timeout; en ese caso, aumentarlo no bastará y habrá que reducir el tiempo de
 respuesta del backend o acceder mediante un gateway que permita solicitudes más largas.

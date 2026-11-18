@@ -81,6 +81,17 @@ export function registerJavaApiProxy(
               activeRequest = upstream;
             }
           );
+
+          if (isTransientGatewayResponse(upstreamResponse) && attempt < RETRY_DELAYS_MS.length) {
+            const delay = RETRY_DELAYS_MS[attempt];
+            console.warn(
+              `El gateway de ${backend.origin} respondió HTTP ${upstreamResponse.statusCode}; reintento ${attempt + 1}/${RETRY_DELAYS_MS.length} en ${delay / 1000}s.`
+            );
+            upstreamResponse.resume();
+            await wait(delay);
+            continue;
+          }
+
           response.status(upstreamResponse.statusCode ?? 502);
           for (const [name, value] of Object.entries(upstreamResponse.headers)) {
             if (value !== undefined) response.setHeader(name, value);
@@ -160,6 +171,15 @@ function isTransientConnectionError(error: unknown): boolean {
     typeof code === 'string' &&
     ['ECONNRESET', 'ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH', 'EAI_AGAIN'].includes(code)
   );
+}
+
+function isTransientGatewayResponse(response: IncomingMessage): boolean {
+  const statusCode = response.statusCode;
+  if (statusCode !== 502 && statusCode !== 503 && statusCode !== 504) return false;
+
+  const contentType = response.headers['content-type'];
+  const isHtmlResponse = typeof contentType === 'string' && contentType.includes('text/html');
+  return isHtmlResponse || response.headers['x-render-routing'] !== undefined;
 }
 
 function wait(delayMs: number): Promise<void> {
