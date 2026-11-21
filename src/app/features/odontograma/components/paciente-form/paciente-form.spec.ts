@@ -16,7 +16,11 @@ const { pdfMock, jsPdfMock } = vi.hoisted(() => {
     text: vi.fn(),
     roundedRect: vi.fn(),
     setDrawColor: vi.fn(),
-    addSvgAsImage: vi.fn(() => Promise.resolve(pdf)),
+    saveGraphicsState: vi.fn(),
+    restoreGraphicsState: vi.fn(),
+    setCurrentTransformationMatrix: vi.fn(),
+    Matrix: vi.fn(() => ({})),
+    addSvgAsImage: vi.fn((..._args: unknown[]) => Promise.resolve(pdf)),
     splitTextToSize: vi.fn((text: string) => [text]),
     addPage: vi.fn(),
     save: vi.fn()
@@ -35,6 +39,7 @@ describe('PacienteFormComponent', () => {
   let patientApi: { procesarDictadoPaciente: ReturnType<typeof vi.fn> };
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     transcription = {
       transcribir: vi.fn(() =>
         of('María López tiene 34 años y es alérgica a la penicilina.')
@@ -106,6 +111,7 @@ describe('PacienteFormComponent', () => {
 
     expect(jsPdfMock).toHaveBeenCalledOnce();
     expect(pdfMock.addSvgAsImage).toHaveBeenCalled();
+    expect(pdfMock.text).toHaveBeenCalledWith('SONRISA CLÍNICA', 45, 12);
     expect(pdfMock.text).toHaveBeenCalledWith('Datos personales', 21, 53.5);
     expect(pdfMock.save).toHaveBeenCalledWith('ficha-paciente.pdf');
     expect(fixture.nativeElement.textContent).toContain(
@@ -145,11 +151,20 @@ describe('PacienteFormComponent', () => {
       expect.any(Number),
       expect.any(Number)
     );
-    expect(pdfMock.text).toHaveBeenCalledWith(
-      '16',
+    const odontogramaSvg = pdfMock.addSvgAsImage.mock.calls.find(
+      (call) => call[5] === 'odontograma-actual'
+    )?.[0] as string | undefined;
+    expect(odontogramaSvg).toContain('viewBox="0 0 1050 320"');
+    expect(odontogramaSvg).toContain('M29 51c2 19 6 40 14 57');
+    expect(odontogramaSvg).toContain('fill="#EF4444"');
+    expect(pdfMock.addSvgAsImage).toHaveBeenCalledWith(
+      expect.stringContaining('viewBox="0 0 1050 320"'),
       expect.any(Number),
       expect.any(Number),
-      { align: 'center' }
+      expect.any(Number),
+      expect.any(Number),
+      'odontograma-actual',
+      true
     );
   });
 

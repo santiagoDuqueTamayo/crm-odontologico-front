@@ -279,22 +279,61 @@ export class PacienteFormComponent implements OnDestroy {
     const paciente = this.paciente();
     pdf.setFillColor(18, 59, 48);
     pdf.rect(0, 0, anchoPagina, 39, 'F');
-    await pdf.addSvgAsImage(iconoMarca, 16, 8, 22, 22, 'sonrisa-clinica', true);
+    await this.dibujarSvgAltaResolucion(
+      pdf,
+      iconoMarca,
+      16,
+      7,
+      23,
+      23,
+      'sonrisa-clinica'
+    );
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(17);
-    pdf.text('Ficha del paciente', 44, 16);
+    pdf.setFontSize(9);
+    pdf.text('SONRISA CLÍNICA', 45, 12);
+    pdf.setFontSize(16);
+    pdf.text('Ficha del paciente', 45, 22);
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
+    pdf.setFontSize(9);
     pdf.text(
       `${paciente.nombres} ${paciente.apellidos}`.trim() || 'Paciente sin nombre',
-      44,
-      25
+      45,
+      31
     );
-    pdf.setFontSize(9);
-    pdf.text(`Generada: ${new Date().toLocaleDateString('es-CO')}`, anchoPagina - 18, 25, {
+    pdf.setFontSize(8);
+    pdf.text(`Generada: ${new Date().toLocaleDateString('es-CO')}`, anchoPagina - 18, 31, {
       align: 'right'
     });
+  }
+
+  private async dibujarSvgAltaResolucion(
+    pdf: JsPDFDocument,
+    svg: string,
+    x: number,
+    y: number,
+    ancho: number,
+    alto: number,
+    alias: string
+  ): Promise<void> {
+    const escala = 10;
+    pdf.saveGraphicsState();
+    pdf.setCurrentTransformationMatrix(
+      pdf.Matrix(1 / escala, 0, 0, 1 / escala, 0, 0)
+    );
+    try {
+      await pdf.addSvgAsImage(
+        svg,
+        x * escala,
+        y * escala,
+        ancho * escala,
+        alto * escala,
+        alias,
+        true
+      );
+    } finally {
+      pdf.restoreGraphicsState();
+    }
   }
 
   private dibujarTituloSeccion(
@@ -355,78 +394,16 @@ export class PacienteFormComponent implements OnDestroy {
     );
     pdf.text('palatino/lingual abajo y oclusal/incisal al centro.', margen, 68);
 
-    const dientesPorNumero = new Map(this.odontograma().map((diente) => [diente.numero, diente]));
-    const separacionCentral = 4;
-    const anchoCelda = (anchoContenido - separacionCentral) / 16;
-    const arcadas: ReadonlyArray<{
-      titulo: string;
-      numeros: number[];
-      y: number;
-    }> = [
-      {
-        titulo: 'MAXILAR SUPERIOR',
-        numeros: [
-          ...Array.from({ length: 8 }, (_, indice) => 18 - indice),
-          ...Array.from({ length: 8 }, (_, indice) => 21 + indice)
-        ],
-        y: 76
-      },
-      {
-        titulo: 'MANDÍBULA INFERIOR',
-        numeros: [
-          ...Array.from({ length: 8 }, (_, indice) => 48 - indice),
-          ...Array.from({ length: 8 }, (_, indice) => 31 + indice)
-        ],
-        y: 110
-      }
-    ];
-
-    for (const arcada of arcadas) {
-      pdf.setTextColor(23, 102, 79);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(8);
-      pdf.text(arcada.titulo, margen, arcada.y);
-      arcada.numeros.forEach((numero, indice) => {
-        const x =
-          margen +
-          indice * anchoCelda +
-          (indice >= 8 ? separacionCentral : 0);
-        const centroX = x + anchoCelda / 2;
-        const diente = dientesPorNumero.get(numero);
-        pdf.setDrawColor(224, 235, 229);
-        pdf.setFillColor(248, 251, 249);
-        pdf.roundedRect(x + 0.4, arcada.y + 2, anchoCelda - 0.8, 25, 1.5, 1.5, 'FD');
-        pdf.setTextColor(35, 75, 59);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(6);
-        pdf.text(String(numero), centroX, arcada.y + 8, { align: 'center' });
-
-        const centroY = arcada.y + 18;
-        const tamanoCara = 2.2;
-        for (const { cara, posicion } of ORDEN_CARAS_PDF) {
-          const offset =
-            posicion === 'arriba'
-              ? ([0, -tamanoCara] as const)
-              : posicion === 'derecha'
-                ? ([tamanoCara, 0] as const)
-                : posicion === 'abajo'
-                  ? ([0, tamanoCara] as const)
-                  : posicion === 'izquierda'
-                    ? ([-tamanoCara, 0] as const)
-                    : ([0, 0] as const);
-          const estado = diente ? this.obtenerColorCaraPdf(diente, cara) : '#fffef9';
-          const [rojo, verde, azul] = this.convertirColorRgb(estado);
-          pdf.setFillColor(rojo, verde, azul);
-          pdf.rect(
-            centroX + offset[0] - tamanoCara / 2,
-            centroY + offset[1] - tamanoCara / 2,
-            tamanoCara,
-            tamanoCara,
-            'F'
-          );
-        }
-      });
-    }
+    const odontogramaSvg = this.crearOdontogramaSvg();
+    await this.dibujarSvgAltaResolucion(
+      pdf,
+      odontogramaSvg,
+      margen,
+      72,
+      anchoContenido,
+      57,
+      'odontograma-actual'
+    );
 
     let posicionY = 148;
     this.dibujarTituloSeccion(pdf, 'Hallazgos por pieza', margen, posicionY, anchoContenido);
@@ -474,6 +451,147 @@ export class PacienteFormComponent implements OnDestroy {
     }
   }
 
+  private crearOdontogramaSvg(): string {
+      const dientesPorNumero = new Map(this.odontograma().map((diente) => [diente.numero, diente]));
+      const arcadas = [
+        {
+          titulo: 'MAXILAR SUPERIOR',
+          numeros: [
+            ...Array.from({ length: 8 }, (_, indice) => 18 - indice),
+            ...Array.from({ length: 8 }, (_, indice) => 21 + indice)
+          ],
+          etiquetaY: 19,
+          dienteY: 25
+        },
+        {
+          titulo: 'MANDÍBULA INFERIOR',
+          numeros: [
+            ...Array.from({ length: 8 }, (_, indice) => 48 - indice),
+            ...Array.from({ length: 8 }, (_, indice) => 31 + indice)
+          ],
+          etiquetaY: 166,
+          dienteY: 172
+        }
+      ];
+      const superficies = [
+        { cara: 'vestibular' as const, path: 'M 18.89 18.89 A 44 44 0 0 1 81.11 18.89 L 62.73 37.27 A 18 18 0 0 0 37.27 37.27 Z' },
+        { cara: 'distal' as const, path: 'M 81.11 18.89 A 44 44 0 0 1 81.11 81.11 L 62.73 62.73 A 18 18 0 0 0 62.73 37.27 Z' },
+        { cara: 'palatino_lingual' as const, path: 'M 81.11 81.11 A 44 44 0 0 1 18.89 81.11 L 37.27 62.73 A 18 18 0 0 0 62.73 62.73 Z' },
+        { cara: 'mesial' as const, path: 'M 18.89 81.11 A 44 44 0 0 1 18.89 18.89 L 37.27 37.27 A 18 18 0 0 0 37.27 62.73 Z' }
+      ];
+      const contenidoArcadas = arcadas
+        .map((arcada) => {
+          const dientesSvg = arcada.numeros
+            .map((numero, indice) => {
+              const x = 35 + indice * 60 + (indice >= 8 ? 18 : 0);
+              return this.crearDienteSvg(numero, dientesPorNumero.get(numero), x, arcada.dienteY, superficies);
+            })
+            .join('');
+          return `<text class="arcada" x="35" y="${arcada.etiquetaY}">${arcada.titulo}</text>${dientesSvg}`;
+        })
+        .join('');
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="320" viewBox="0 0 1050 320">
+        <style>
+          .arcada{font:700 15px Arial,sans-serif;letter-spacing:1px;fill:#17664f}
+          .numero{font:600 13px Arial,sans-serif;fill:#355749}
+          .pieza{stroke:#b7a99a;stroke-width:3;stroke-linejoin:round}
+          .raiz{stroke:#b7a99a;stroke-width:3;stroke-linejoin:round}
+        </style>
+        <rect width="1050" height="320" rx="14" fill="#fff"/>
+        ${contenidoArcadas}
+      </svg>`;
+  }
+
+  private crearDienteSvg(
+    numero: number,
+    diente: DienteData | undefined,
+    x: number,
+    y: number,
+    superficies: ReadonlyArray<{ cara: CaraDientePdf; path: string }>
+  ): string {
+    const unidad = numero % 10;
+    const forma =
+      unidad <= 2
+        ? {
+            raiz: 'M29 51c2 19 6 40 14 57 3 5 7 5 9-1 7-20 11-39 13-57',
+            corona: 'M27 52c-12-5-17-16-13-29C18 8 34 8 50 11c17-3 32-3 37 12 4 13-1 24-14 29-11 5-35 5-46 0Z'
+          }
+        : unidad === 3
+          ? {
+              raiz: 'M34 43c1 24 5 47 12 67 2 7 7 7 9 0 8-21 11-44 12-67',
+              corona: 'M27 48C12 41 13 23 23 15c7-6 15-3 27-12 12 9 20 6 27 12 10 8 11 26-4 33-10 5-36 5-46 0Z'
+            }
+          : unidad === 4 || unidad === 5
+            ? {
+                raiz: 'M28 52c0 21 5 37 13 52 3 5 8 5 10 0 2-6 4-6 7 0 3 5 8 5 10 0 8-15 13-31 13-52',
+                corona: 'M28 53C15 49 12 35 17 21 22 8 36 8 50 14c14-6 28-6 33 7 5 14 2 28-11 32-12 5-32 5-44 0Z'
+              }
+            : {
+                raiz: 'M23 51c-1 18 2 34 9 48 3 6 8 6 11 0l7-15 7 15c3 6 8 6 11 0 7-14 10-30 9-48',
+                corona: 'M24 54C9 48 8 31 16 19 24 7 37 10 50 16 63 10 76 7 84 19c8 12 7 29-8 35-13 6-39 6-52 0Z'
+              };
+
+    const colorCorona = diente ? this.obtenerColorCoronaPdf(diente) : '#fffef9';
+    const colorRaiz = diente ? this.obtenerColorRaizPdf(diente) : '#f7f3e8';
+    const ausente = ['ausente', 'extraído', 'extraido'].includes(
+      diente?.estadoGeneral.estado.trim().toLowerCase() ?? ''
+    );
+    const transformar = numero < 30 ? 'transform="rotate(180 50 65)"' : '';
+    const carasSvg = superficies
+      .map(({ cara, path }) => {
+        const color = diente ? this.obtenerColorCaraPdf(diente, cara) : '#fffef9';
+        return `<path d="${path}" fill="${color}" stroke="#b7a99a" stroke-width="2.5"/>`;
+      })
+      .join('');
+
+    return `<g>
+        <rect x="${x}" y="${y}" width="54" height="135" rx="9" fill="#f8fbf9" stroke="#dfeae4" stroke-width="2"/>
+        <text class="numero" x="${x + 27}" y="${y + 17}" text-anchor="middle">${numero}</text>
+        <svg x="${x + 8}" y="${y + 21}" width="38" height="61" viewBox="0 0 100 130" ${transformar}>
+          <path class="raiz" d="${forma.raiz}" fill="${colorRaiz}"/>
+          <path class="pieza" d="${forma.corona}" fill="${colorCorona}"/>
+          ${ausente ? '<path d="M22 18L78 54M78 18L22 54" fill="none" stroke="#64748b" stroke-width="5" stroke-linecap="round"/>' : ''}
+        </svg>
+        <svg x="${x + 13}" y="${y + 87}" width="28" height="28" viewBox="0 0 100 100">
+          ${carasSvg}
+          <circle cx="50" cy="50" r="18" fill="${diente ? this.obtenerColorCaraPdf(diente, 'oclusal_incisal') : '#fffef9'}" stroke="#b7a99a" stroke-width="2.5"/>
+          ${ausente ? '<path d="M24 24L76 76M76 24L24 76" fill="none" stroke="#64748b" stroke-width="7" stroke-linecap="round"/>' : ''}
+        </svg>
+      </g>`;
+  }
+
+  private obtenerColorCoronaPdf(diente: DienteData): string {
+    const hallazgoCara = ORDEN_CARAS_PDF
+      .map(({ cara }) => diente.caras[cara])
+      .find((cara) => !this.esEstadoSanoOPresente(cara.estado));
+    if (hallazgoCara) {
+      return this.colorSeguroPdf(hallazgoCara.estado, hallazgoCara.colorHex);
+    }
+
+    const estadoGeneral = diente.estadoGeneral.estado;
+    return this.esEstadoSanoOPresente(estadoGeneral) || esEstadoExclusivoDeRaiz(estadoGeneral)
+      ? '#fffef9'
+      : this.colorSeguroPdf(estadoGeneral, diente.estadoGeneral.colorHex);
+  }
+
+  private obtenerColorRaizPdf(diente: DienteData): string {
+    if (diente.raiz && !this.esEstadoSanoOPresente(diente.raiz.estado)) {
+      return this.colorSeguroPdf(diente.raiz.estado, diente.raiz.colorHex);
+    }
+
+    const estadoGeneral = diente.estadoGeneral.estado;
+    if (
+      diente.raiz === undefined &&
+      ['endodoncia', 'núcleo/poste', 'nucleo/poste', 'implante', 'ausente', 'extraído', 'extraido'].includes(
+        estadoGeneral.trim().toLowerCase()
+      )
+    ) {
+      return this.colorSeguroPdf(estadoGeneral, diente.estadoGeneral.colorHex);
+    }
+    return '#f7f3e8';
+  }
+
   private obtenerColorCaraPdf(diente: DienteData, cara: CaraDientePdf): string {
     const estadoCara = diente.caras[cara];
     if (
@@ -514,15 +632,6 @@ export class PacienteFormComponent implements OnDestroy {
   private colorSeguroPdf(estado: string, colorHex: string | null): string {
     const color = resolverColorPorEstadoClinico(estado, colorHex);
     return /^#[\da-f]{6}$/i.test(color) ? color : '#F59E0B';
-  }
-
-  private convertirColorRgb(color: string): [number, number, number] {
-    const valor = color.replace('#', '');
-    return [
-      Number.parseInt(valor.slice(0, 2), 16),
-      Number.parseInt(valor.slice(2, 4), 16),
-      Number.parseInt(valor.slice(4, 6), 16)
-    ];
   }
 
   private esEstadoSanoOPresente(estado: string | null | undefined): boolean {
