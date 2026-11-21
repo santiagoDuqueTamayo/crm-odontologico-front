@@ -61,9 +61,11 @@ El endpoint recibe `{"textoCapturado":"..."}` y devuelve un objeto con los campo
 `antecedentesMedicos` y `antecedentesOdontologicos`. La extracción usa `ODONTOGRAMA_AI_PROVIDER`
 (Google AI por defecto u Ollama), no la clave de Groq; Groq se usa para la transcripción de audio.
 
-La ficha solo se mantiene en memoria mientras la aplicación está abierta. No se guarda ni se envía
-a la base de datos clínica; recargar la página la borra. El audio se envía a Groq Cloud para
-transcribirlo y la transcripción al proveedor de IA configurado en el backend para estructurarla.
+La ficha y el odontograma solo se mantienen en memoria mientras la página está abierta. No se
+guardan ni se envían a la base de datos clínica; recargar la página los borra. El PDF descargado
+incluye los datos del paciente y una representación del odontograma actual con el estado de sus
+caras. El audio se envía a Groq Cloud para transcribirlo y la transcripción al proveedor de IA
+configurado en el backend para estructurarla.
 
 ## Compilar y probar
 

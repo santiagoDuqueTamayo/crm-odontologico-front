@@ -1,10 +1,29 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, inject, model, signal } from '@angular/core';
+import { Component, OnDestroy, inject, input, model, signal } from '@angular/core';
+import type { jsPDF as JsPDFDocument } from 'jspdf';
 import { SpeechTranscriptionService } from '../../services/speech-transcription.service';
 import { OdontogramaApiService } from '../../services/odontograma-api.service';
 import { crearPacienteVacio, DatosPaciente } from '../../models/paciente.models';
+import {
+  CarasDiente,
+  DienteData,
+  esEstadoExclusivoDeRaiz,
+  resolverColorPorEstadoClinico
+} from '../../models/odontograma.models';
 
 type CampoPaciente = keyof DatosPaciente;
+type CaraDientePdf = keyof CarasDiente;
+
+const ORDEN_CARAS_PDF: ReadonlyArray<{
+  cara: CaraDientePdf;
+  posicion: 'arriba' | 'derecha' | 'abajo' | 'izquierda' | 'centro';
+}> = [
+  { cara: 'vestibular', posicion: 'arriba' },
+  { cara: 'distal', posicion: 'derecha' },
+  { cara: 'palatino_lingual', posicion: 'abajo' },
+  { cara: 'mesial', posicion: 'izquierda' },
+  { cara: 'oclusal_incisal', posicion: 'centro' }
+];
 
 @Component({
   selector: 'app-paciente-form',
@@ -17,6 +36,7 @@ export class PacienteFormComponent implements OnDestroy {
   private readonly odontogramaApi = inject(OdontogramaApiService);
 
   readonly paciente = model<DatosPaciente>(crearPacienteVacio());
+  readonly odontograma = input<readonly DienteData[]>([]);
   protected readonly grabando = signal(false);
   protected readonly iniciandoGrabacion = signal(false);
   protected readonly transcribiendo = signal(false);
@@ -63,31 +83,14 @@ export class PacienteFormComponent implements OnDestroy {
       const margen = 18;
       const anchoContenido = anchoPagina - margen * 2;
       const paciente = this.paciente();
-      let posicionY = 20;
-
       pdf.setProperties({ title: 'Ficha del paciente', subject: 'Datos del paciente' });
-      pdf.setFillColor(23, 102, 79);
-      pdf.rect(0, 0, anchoPagina, 34, 'F');
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(18);
-      pdf.text('Ficha del paciente', margen, 16);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      pdf.text(
-        `${paciente.nombres} ${paciente.apellidos}`.trim() || 'Paciente sin nombre',
-        margen,
-        25
-      );
-      pdf.setFontSize(9);
-      pdf.text(`Generada: ${new Date().toLocaleDateString('es-CO')}`, anchoPagina - margen, 25, {
-        align: 'right'
-      });
-      posicionY = 46;
+      const iconoMarca = await this.cargarIconoMarca();
+      await this.dibujarEncabezadoPdf(pdf, iconoMarca, anchoPagina);
+      let posicionY = 48;
 
       const secciones: ReadonlyArray<{
         titulo: string;
-        campos: ReadonlyArray<{ id: CampoPaciente; label: string }>;
+        campos: ReadonlyArray<{ id: CampoPaciente; label: string; multiline?: boolean }>;
       }> = [
         {
           titulo: 'Datos personales',
@@ -116,50 +119,110 @@ export class PacienteFormComponent implements OnDestroy {
       ];
 
       for (const seccion of secciones) {
-        if (posicionY + 13 > altoPagina - margen) {
+        if (posicionY + 17 > altoPagina - margen) {
           pdf.addPage();
-          posicionY = margen;
+          await this.dibujarEncabezadoPdf(pdf, iconoMarca, anchoPagina);
+          posicionY = 48;
         }
+        this.dibujarTituloSeccion(pdf, seccion.titulo, margen, posicionY, anchoContenido);
+        posicionY += 14;
+        let indiceCampo = 0;
 
-        pdf.setFillColor(229, 244, 236);
-        pdf.roundedRect(margen, posicionY, anchoContenido, 9, 2, 2, 'F');
-        pdf.setTextColor(23, 102, 79);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.text(seccion.titulo, margen + 3, posicionY + 6);
-        posicionY += 15;
+        while (indiceCampo < seccion.campos.length) {
+          const campo = seccion.campos[indiceCampo];
+          const fila = campo.multiline
+            ? [campo]
+            : [
+                campo,
+                ...(!seccion.campos[indiceCampo + 1]?.multiline && seccion.campos[indiceCampo + 1]
+                  ? [seccion.campos[indiceCampo + 1]]
+                  : [])
+              ];
+          const anchoTarjeta =
+            fila.length === 2 ? (anchoContenido - 6) / 2 : anchoContenido;
+          const tarjetas = fila.map((dato) => {
+            const valor = paciente[dato.id].trim() || 'No registrado';
+            const lineas = pdf.splitTextToSize(valor, anchoTarjeta - 10) as string[];
+            return { dato, lineas, alto: Math.max(19, lineas.length * 4.5 + 13) };
+          });
+          const altoFila = Math.max(...tarjetas.map((tarjeta) => tarjeta.alto));
 
-        for (const campo of seccion.campos) {
-          const valor = paciente[campo.id].trim() || 'No registrado';
-          const lineas = pdf.splitTextToSize(valor, anchoContenido);
-
-          if (posicionY + 11 > altoPagina - margen) {
-            pdf.addPage();
-            posicionY = margen;
-          }
-
-          pdf.setTextColor(83, 107, 96);
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(9);
-          pdf.text(campo.label, margen, posicionY);
-          posicionY += 5;
-
-          pdf.setTextColor(25, 59, 50);
-          pdf.setFont('helvetica', 'normal');
-          pdf.setFontSize(10);
-          for (const linea of lineas) {
-            if (posicionY + 5 > altoPagina - margen) {
-              pdf.addPage();
-              posicionY = margen;
+          if (fila.length === 1 && tarjetas[0].lineas.length > 1) {
+            let indiceLinea = 0;
+            while (indiceLinea < tarjetas[0].lineas.length) {
+              if (posicionY + 19 > altoPagina - 17) {
+                posicionY = await this.abrirPaginaContinuacionPdf(
+                  pdf,
+                  iconoMarca,
+                  anchoPagina,
+                  margen,
+                  anchoContenido,
+                  seccion.titulo
+                );
+              }
+              const maxLineas = Math.max(
+                1,
+                Math.floor((altoPagina - 17 - posicionY - 13) / 4.5)
+              );
+              const lineas = tarjetas[0].lineas.slice(indiceLinea, indiceLinea + maxLineas);
+              const altoTarjeta = Math.max(19, lineas.length * 4.5 + 13);
+              this.dibujarTarjetaCampo(
+                pdf,
+                indiceLinea === 0
+                  ? tarjetas[0].dato.label
+                  : `${tarjetas[0].dato.label} · continuación`,
+                lineas,
+                margen,
+                posicionY,
+                anchoContenido,
+                altoTarjeta
+              );
+              posicionY += altoTarjeta + 5;
+              indiceLinea += lineas.length;
             }
-            pdf.text(linea, margen, posicionY);
-            posicionY += 5;
+            indiceCampo += fila.length;
+            continue;
           }
-          posicionY += 5;
+
+          if (posicionY + altoFila > altoPagina - 17) {
+            posicionY = await this.abrirPaginaContinuacionPdf(
+              pdf,
+              iconoMarca,
+              anchoPagina,
+              margen,
+              anchoContenido,
+              seccion.titulo
+            );
+          }
+
+          tarjetas.forEach((tarjeta, indiceTarjeta) => {
+            const x =
+              margen + indiceTarjeta * (anchoTarjeta + (fila.length === 2 ? 6 : 0));
+            this.dibujarTarjetaCampo(
+              pdf,
+              tarjeta.dato.label,
+              tarjeta.lineas,
+              x,
+              posicionY,
+              anchoTarjeta,
+              altoFila
+            );
+          });
+          posicionY += altoFila + 5;
+          indiceCampo += fila.length;
         }
 
-        posicionY += 3;
+        posicionY += 5;
       }
+
+      await this.dibujarOdontogramaPdf(
+        pdf,
+        iconoMarca,
+        anchoPagina,
+        altoPagina,
+        margen,
+        anchoContenido
+      );
 
       const nombreArchivo = `${paciente.nombres}-${paciente.apellidos}`
         .normalize('NFD')
@@ -168,11 +231,303 @@ export class PacienteFormComponent implements OnDestroy {
         .replace(/^-|-$/g, '')
         .toLowerCase() || 'paciente';
       pdf.save(`ficha-${nombreArchivo}.pdf`);
-      this.mensajeExportacion.set('La ficha del paciente se descargó en PDF.');
+      this.mensajeExportacion.set('La ficha y el odontograma se descargaron en PDF.');
     } catch (error) {
       console.error('No se pudo exportar la ficha del paciente a PDF.', error);
       this.mensajeExportacion.set('No se pudo generar el PDF. Inténtalo de nuevo.');
     }
+  }
+
+  private async abrirPaginaContinuacionPdf(
+    pdf: JsPDFDocument,
+    iconoMarca: string,
+    anchoPagina: number,
+    margen: number,
+    anchoContenido: number,
+    tituloSeccion: string
+  ): Promise<number> {
+    pdf.addPage();
+    await this.dibujarEncabezadoPdf(pdf, iconoMarca, anchoPagina);
+    this.dibujarTituloSeccion(
+      pdf,
+      `${tituloSeccion} · continuación`,
+      margen,
+      48,
+      anchoContenido
+    );
+    return 62;
+  }
+
+  private async cargarIconoMarca(): Promise<string> {
+    const respuesta = await fetch(new URL('sonrisa-clinica.svg', document.baseURI));
+    if (!respuesta.ok) {
+      throw new Error(`No se pudo cargar el icono de marca (${respuesta.status}).`);
+    }
+
+    const svg = await respuesta.text();
+    if (!svg.includes('<svg')) {
+      throw new Error('El archivo del icono de marca no contiene un SVG válido.');
+    }
+    return svg;
+  }
+
+  private async dibujarEncabezadoPdf(
+    pdf: JsPDFDocument,
+    iconoMarca: string,
+    anchoPagina: number
+  ): Promise<void> {
+    const paciente = this.paciente();
+    pdf.setFillColor(18, 59, 48);
+    pdf.rect(0, 0, anchoPagina, 39, 'F');
+    await pdf.addSvgAsImage(iconoMarca, 16, 8, 22, 22, 'sonrisa-clinica', true);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(17);
+    pdf.text('Ficha del paciente', 44, 16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.text(
+      `${paciente.nombres} ${paciente.apellidos}`.trim() || 'Paciente sin nombre',
+      44,
+      25
+    );
+    pdf.setFontSize(9);
+    pdf.text(`Generada: ${new Date().toLocaleDateString('es-CO')}`, anchoPagina - 18, 25, {
+      align: 'right'
+    });
+  }
+
+  private dibujarTituloSeccion(
+    pdf: JsPDFDocument,
+    titulo: string,
+    x: number,
+    y: number,
+    ancho: number
+  ): void {
+    pdf.setFillColor(229, 244, 236);
+    pdf.roundedRect(x, y, ancho, 8, 2, 2, 'F');
+    pdf.setTextColor(23, 102, 79);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
+    pdf.text(titulo, x + 3, y + 5.5);
+  }
+
+  private dibujarTarjetaCampo(
+    pdf: JsPDFDocument,
+    etiqueta: string,
+    lineas: string[],
+    x: number,
+    y: number,
+    ancho: number,
+    alto: number
+  ): void {
+    pdf.setFillColor(248, 251, 249);
+    pdf.setDrawColor(224, 235, 229);
+    pdf.roundedRect(x, y, ancho, alto, 2, 2, 'FD');
+    pdf.setTextColor(83, 107, 96);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(8);
+    pdf.text(etiqueta, x + 5, y + 6);
+    pdf.setTextColor(25, 59, 50);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    lineas.forEach((linea, indice) => pdf.text(linea, x + 5, y + 11 + indice * 4.5));
+  }
+
+  private async dibujarOdontogramaPdf(
+    pdf: JsPDFDocument,
+    iconoMarca: string,
+    anchoPagina: number,
+    altoPagina: number,
+    margen: number,
+    anchoContenido: number
+  ): Promise<void> {
+    pdf.addPage();
+    await this.dibujarEncabezadoPdf(pdf, iconoMarca, anchoPagina);
+    this.dibujarTituloSeccion(pdf, 'Odontograma actual', margen, 48, anchoContenido);
+    pdf.setTextColor(83, 107, 96);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.text(
+      'Vista por superficies: vestibular arriba, mesial a la izquierda, distal a la derecha,',
+      margen,
+      63
+    );
+    pdf.text('palatino/lingual abajo y oclusal/incisal al centro.', margen, 68);
+
+    const dientesPorNumero = new Map(this.odontograma().map((diente) => [diente.numero, diente]));
+    const separacionCentral = 4;
+    const anchoCelda = (anchoContenido - separacionCentral) / 16;
+    const arcadas: ReadonlyArray<{
+      titulo: string;
+      numeros: number[];
+      y: number;
+    }> = [
+      {
+        titulo: 'MAXILAR SUPERIOR',
+        numeros: [
+          ...Array.from({ length: 8 }, (_, indice) => 18 - indice),
+          ...Array.from({ length: 8 }, (_, indice) => 21 + indice)
+        ],
+        y: 76
+      },
+      {
+        titulo: 'MANDÍBULA INFERIOR',
+        numeros: [
+          ...Array.from({ length: 8 }, (_, indice) => 48 - indice),
+          ...Array.from({ length: 8 }, (_, indice) => 31 + indice)
+        ],
+        y: 110
+      }
+    ];
+
+    for (const arcada of arcadas) {
+      pdf.setTextColor(23, 102, 79);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text(arcada.titulo, margen, arcada.y);
+      arcada.numeros.forEach((numero, indice) => {
+        const x =
+          margen +
+          indice * anchoCelda +
+          (indice >= 8 ? separacionCentral : 0);
+        const centroX = x + anchoCelda / 2;
+        const diente = dientesPorNumero.get(numero);
+        pdf.setDrawColor(224, 235, 229);
+        pdf.setFillColor(248, 251, 249);
+        pdf.roundedRect(x + 0.4, arcada.y + 2, anchoCelda - 0.8, 25, 1.5, 1.5, 'FD');
+        pdf.setTextColor(35, 75, 59);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(6);
+        pdf.text(String(numero), centroX, arcada.y + 8, { align: 'center' });
+
+        const centroY = arcada.y + 18;
+        const tamanoCara = 2.2;
+        for (const { cara, posicion } of ORDEN_CARAS_PDF) {
+          const offset =
+            posicion === 'arriba'
+              ? ([0, -tamanoCara] as const)
+              : posicion === 'derecha'
+                ? ([tamanoCara, 0] as const)
+                : posicion === 'abajo'
+                  ? ([0, tamanoCara] as const)
+                  : posicion === 'izquierda'
+                    ? ([-tamanoCara, 0] as const)
+                    : ([0, 0] as const);
+          const estado = diente ? this.obtenerColorCaraPdf(diente, cara) : '#fffef9';
+          const [rojo, verde, azul] = this.convertirColorRgb(estado);
+          pdf.setFillColor(rojo, verde, azul);
+          pdf.rect(
+            centroX + offset[0] - tamanoCara / 2,
+            centroY + offset[1] - tamanoCara / 2,
+            tamanoCara,
+            tamanoCara,
+            'F'
+          );
+        }
+      });
+    }
+
+    let posicionY = 148;
+    this.dibujarTituloSeccion(pdf, 'Hallazgos por pieza', margen, posicionY, anchoContenido);
+    posicionY += 14;
+    const hallazgos = this.odontograma()
+      .map((diente) => ({ diente, detalle: this.obtenerHallazgosDiente(diente) }))
+      .filter(({ detalle }) => detalle.length > 0);
+
+    if (hallazgos.length === 0) {
+      pdf.setTextColor(83, 107, 96);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.text('No se registran hallazgos; todas las superficies figuran sanas.', margen, posicionY);
+      return;
+    }
+
+    for (const { diente, detalle } of hallazgos) {
+      const lineas = pdf.splitTextToSize(
+        `${diente.numero} · ${detalle.join('; ')}`,
+        anchoContenido - 8
+      ) as string[];
+      const alto = Math.max(12, lineas.length * 4.5 + 6);
+      if (posicionY + alto > altoPagina - margen) {
+        pdf.addPage();
+        await this.dibujarEncabezadoPdf(pdf, iconoMarca, anchoPagina);
+        this.dibujarTituloSeccion(
+          pdf,
+          'Hallazgos por pieza · continuación',
+          margen,
+          48,
+          anchoContenido
+        );
+        posicionY = 62;
+      }
+
+      pdf.setFillColor(248, 251, 249);
+      pdf.roundedRect(margen, posicionY, anchoContenido, alto, 2, 2, 'F');
+      pdf.setTextColor(25, 59, 50);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      lineas.forEach((linea, indice) =>
+        pdf.text(linea, margen + 4, posicionY + 5 + indice * 4.5)
+      );
+      posicionY += alto + 2;
+    }
+  }
+
+  private obtenerColorCaraPdf(diente: DienteData, cara: CaraDientePdf): string {
+    const estadoCara = diente.caras[cara];
+    if (
+      estadoCara &&
+      !this.esEstadoSanoOPresente(estadoCara.estado) &&
+      (diente.raiz !== undefined || !esEstadoExclusivoDeRaiz(estadoCara.estado))
+    ) {
+      return this.colorSeguroPdf(estadoCara.estado, estadoCara.colorHex);
+    }
+
+    const estadoGeneral = diente.estadoGeneral?.estado;
+    if (
+      diente.raiz === undefined &&
+      !this.esEstadoSanoOPresente(estadoGeneral) &&
+      !esEstadoExclusivoDeRaiz(estadoGeneral)
+    ) {
+      return this.colorSeguroPdf(estadoGeneral, diente.estadoGeneral?.colorHex);
+    }
+    return '#fffef9';
+  }
+
+  private obtenerHallazgosDiente(diente: DienteData): string[] {
+    const hallazgos: string[] = [];
+    if (!this.esEstadoSanoOPresente(diente.estadoGeneral?.estado)) {
+      hallazgos.push(`Estado general: ${diente.estadoGeneral.estado}`);
+    }
+    for (const cara of Object.values(diente.caras)) {
+      if (!this.esEstadoSanoOPresente(cara.estado)) {
+        hallazgos.push(`${cara.etiquetaVisual}: ${cara.estado}`);
+      }
+    }
+    if (diente.raiz && !this.esEstadoSanoOPresente(diente.raiz.estado)) {
+      hallazgos.push(`Raíz: ${diente.raiz.estado}`);
+    }
+    return hallazgos;
+  }
+
+  private colorSeguroPdf(estado: string, colorHex: string | null): string {
+    const color = resolverColorPorEstadoClinico(estado, colorHex);
+    return /^#[\da-f]{6}$/i.test(color) ? color : '#F59E0B';
+  }
+
+  private convertirColorRgb(color: string): [number, number, number] {
+    const valor = color.replace('#', '');
+    return [
+      Number.parseInt(valor.slice(0, 2), 16),
+      Number.parseInt(valor.slice(2, 4), 16),
+      Number.parseInt(valor.slice(4, 6), 16)
+    ];
+  }
+
+  private esEstadoSanoOPresente(estado: string | null | undefined): boolean {
+    const normalizado = estado?.trim().toLowerCase();
+    return !normalizado || normalizado === 'sano' || normalizado === 'presente';
   }
 
   protected async iniciarDictado(): Promise<void> {

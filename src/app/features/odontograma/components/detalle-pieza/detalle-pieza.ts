@@ -20,6 +20,7 @@ import {
   CATALOGO_ESTADOS_CLINICOS,
   construirDienteActualizado,
   DienteData,
+  esEstadoExclusivoDeRaiz,
   OpcionEstadoClinico,
   resolverColorPorEstadoClinico,
   SuperficieDentalId
@@ -28,27 +29,6 @@ import type * as THREE from 'three';
 
 export type CaraDienteId = SuperficieDentalId;
 type TipoParte3d = 'corona' | 'raiz';
-
-const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set<string>([
-  'apicectomía',
-  'apicectomia',
-  'lesión periapical',
-  'lesion periapical',
-  'fractura radicular',
-  'perforación radicular',
-  'perforacion radicular',
-  'lesión de furca',
-  'lesion de furca',
-  'recesión gingival',
-  'recesion gingival',
-  'cálculo subgingival',
-  'calculo subgingival',
-  'reabsorción radicular',
-  'reabsorcion radicular',
-  'anomalía radicular',
-  'anomalia radicular',
-  'resto radicular'
-]);
 
 const ESTADOS_DIENTE_COMPLETO_CON_RAIZ = new Set<string>([
   'endodoncia',
@@ -396,7 +376,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     if (
       cara &&
       !this.esEstadoSanoOPresente(cara.estado) &&
-      !this.esEstadoExclusivoDeRaiz(cara.estado) &&
+      !esEstadoExclusivoDeRaiz(cara.estado) &&
       cara.colorHex &&
       !coloresNeutros.has(cara.colorHex.toLowerCase())
     ) {
@@ -406,7 +386,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     if (
       estadoGeneral &&
       !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
-      !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
+      !esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
       estadoGeneral.colorHex &&
       !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
     ) {
@@ -462,7 +442,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
       return resolverColorPorEstadoClinico(estadoBorrador, null);
     }
 
-    if (!cara || this.esEstadoSanoOPresente(cara.estado) || this.esEstadoExclusivoDeRaiz(cara.estado)) {
+    if (!cara || this.esEstadoSanoOPresente(cara.estado) || esEstadoExclusivoDeRaiz(cara.estado)) {
       return null;
     }
     if (cara.colorHex && !coloresNeutros.has(cara.colorHex.toLowerCase())) {
@@ -532,15 +512,10 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
     return norm === 'sano' || norm === 'presente';
   }
 
-  private esEstadoExclusivoDeRaiz(estado: string | null | undefined): boolean {
-    if (!estado) return false;
-    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(estado.trim().toLowerCase());
-  }
-
   private afectaRaiz(estado: string | null | undefined): boolean {
     if (!estado) return false;
     const norm = estado.trim().toLowerCase();
-    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
+    return esEstadoExclusivoDeRaiz(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
   }
 
   private crearDiente3d(): void {
@@ -798,7 +773,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
       }
     } else {
       const esSana =
-        this.esEstadoSanoOPresente(cara?.estado) || this.esEstadoExclusivoDeRaiz(cara?.estado);
+        this.esEstadoSanoOPresente(cara?.estado) || esEstadoExclusivoDeRaiz(cara?.estado);
       const clinicalColor = cara?.colorHex?.toLowerCase();
 
       if (!esSana && clinicalColor && !coloresNeutros.has(clinicalColor)) {
@@ -808,7 +783,7 @@ export class DetallePiezaComponent implements AfterViewInit, OnDestroy {
         if (
           estadoGeneral &&
           !this.esEstadoSanoOPresente(estadoGeneral.estado) &&
-          !this.esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
+          !esEstadoExclusivoDeRaiz(estadoGeneral.estado) &&
           estadoGeneral.colorHex &&
           !coloresNeutros.has(estadoGeneral.colorHex.toLowerCase())
         ) {

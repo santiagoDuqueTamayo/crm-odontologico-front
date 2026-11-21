@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 import { OdontogramaViewComponent } from './odontograma-view';
 import { OdontogramaApiService } from '../services/odontograma-api.service';
 import { OdontogramaUpdateResponse } from '../models/odontograma.models';
+import { PacienteFormComponent } from '../components/paciente-form/paciente-form';
 
 describe('OdontogramaViewComponent', () => {
   let component: OdontogramaViewComponent;
@@ -57,6 +59,9 @@ describe('OdontogramaViewComponent', () => {
 
     expect(compiled.querySelector('app-paciente-form')).toBeTruthy();
     expect(compiled.querySelector('.workspace-grid #odontograma')).toBeNull();
+    expect(
+      fixture.debugElement.query(By.directive(PacienteFormComponent)).componentInstance.odontograma()
+    ).toHaveLength(32);
 
     const odontogramLink = [...compiled.querySelectorAll('nav button')].find((button) =>
       button.textContent?.includes('Odontograma')
@@ -66,6 +71,39 @@ describe('OdontogramaViewComponent', () => {
 
     expect(compiled.querySelector('app-paciente-form')).toBeNull();
     expect(compiled.querySelector('.workspace-grid #odontograma')).toBeTruthy();
+  });
+
+  it('should keep edited odontogram data in page memory when switching views', () => {
+    component.dientes.update((dientes) =>
+      dientes.map((diente) =>
+        diente.numero === 16
+          ? {
+              ...diente,
+              caras: {
+                ...diente.caras,
+                mesial: { ...diente.caras.mesial, estado: 'Caries', colorHex: '#EF4444' }
+              }
+            }
+          : diente
+      )
+    );
+
+    component.mostrarPaciente();
+    fixture.detectChanges();
+    const patientForm = fixture.debugElement.query(By.directive(PacienteFormComponent))
+      .componentInstance as PacienteFormComponent;
+    expect(patientForm.odontograma().find((diente) => diente.numero === 16)?.caras.mesial.estado)
+      .toBe('Caries');
+
+    component.mostrarOdontograma();
+    fixture.detectChanges();
+    component.mostrarPaciente();
+    fixture.detectChanges();
+
+    const reabierto = fixture.debugElement.query(By.directive(PacienteFormComponent))
+      .componentInstance as PacienteFormComponent;
+    expect(reabierto.odontograma().find((diente) => diente.numero === 16)?.caras.mesial.estado)
+      .toBe('Caries');
   });
 
   it('should render 32 teeth and show the interactive detail when a tooth is selected', () => {

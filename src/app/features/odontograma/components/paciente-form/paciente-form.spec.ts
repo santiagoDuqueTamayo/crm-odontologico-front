@@ -15,6 +15,8 @@ const { pdfMock, jsPdfMock } = vi.hoisted(() => {
     setFontSize: vi.fn(),
     text: vi.fn(),
     roundedRect: vi.fn(),
+    setDrawColor: vi.fn(),
+    addSvgAsImage: vi.fn(() => Promise.resolve(pdf)),
     splitTextToSize: vi.fn((text: string) => [text]),
     addPage: vi.fn(),
     save: vi.fn()
@@ -84,19 +86,71 @@ describe('PacienteFormComponent', () => {
   });
 
   it('should export the patient details as a PDF', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '<svg></svg>'
+      })
+    );
     fixture.detectChanges();
 
     const exportButton = [...fixture.nativeElement.querySelectorAll('button')].find(
-      (button: HTMLButtonElement) => button.textContent?.includes('Exportar ficha en PDF')
+      (button: HTMLButtonElement) =>
+        button.textContent?.includes('Exportar ficha y odontograma en PDF')
     );
     if (!exportButton) throw new Error('PDF export button was not rendered');
     exportButton.click();
     await fixture.whenStable();
 
     expect(jsPdfMock).toHaveBeenCalledOnce();
-    expect(pdfMock.text).toHaveBeenCalledWith('Datos personales', 21, 52);
+    expect(pdfMock.addSvgAsImage).toHaveBeenCalled();
+    expect(pdfMock.text).toHaveBeenCalledWith('Datos personales', 21, 53.5);
     expect(pdfMock.save).toHaveBeenCalledWith('ficha-paciente.pdf');
-    expect(fixture.nativeElement.textContent).toContain('La ficha del paciente se descargó en PDF.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'La ficha y el odontograma se descargaron en PDF.'
+    );
+  });
+
+  it('should include the current odontogram findings in the exported PDF', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '<svg></svg>'
+      })
+    );
+    fixture.componentRef.setInput('odontograma', [
+      {
+        numero: 16,
+        nombreColoquial: 'Primer molar superior derecho',
+        estadoGeneral: { estado: 'Sano', colorHex: '#ffffff' },
+        caras: {
+          mesial: { etiquetaVisual: 'Mesial', estado: 'Caries', colorHex: '#EF4444' },
+          distal: { etiquetaVisual: 'Distal', estado: 'Sano', colorHex: '#ffffff' },
+          vestibular: { etiquetaVisual: 'Vestibular', estado: 'Sano', colorHex: '#ffffff' },
+          palatino_lingual: { etiquetaVisual: 'Palatino', estado: 'Sano', colorHex: '#ffffff' },
+          oclusal_incisal: { etiquetaVisual: 'Oclusal', estado: 'Sano', colorHex: '#ffffff' }
+        }
+      }
+    ]);
+    fixture.detectChanges();
+
+    await component['exportarPdf']();
+
+    expect(pdfMock.text).toHaveBeenCalledWith(
+      '16 · Mesial: Caries',
+      expect.any(Number),
+      expect.any(Number)
+    );
+    expect(pdfMock.text).toHaveBeenCalledWith(
+      '16',
+      expect.any(Number),
+      expect.any(Number),
+      { align: 'center' }
+    );
   });
 
   it('should transcribe all patient details and distribute them into the matching fields', async () => {

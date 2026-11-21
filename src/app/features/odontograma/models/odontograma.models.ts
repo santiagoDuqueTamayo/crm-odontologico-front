@@ -174,6 +174,31 @@ export const MAPA_COLORES_POR_ESTADO: Record<string, string> = {
   'en erupcion': '#84CC16'
 };
 
+const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set([
+  'apicectomía',
+  'apicectomia',
+  'lesión periapical',
+  'lesion periapical',
+  'fractura radicular',
+  'perforación radicular',
+  'perforacion radicular',
+  'lesión de furca',
+  'lesion de furca',
+  'recesión gingival',
+  'recesion gingival',
+  'cálculo subgingival',
+  'calculo subgingival',
+  'reabsorción radicular',
+  'reabsorcion radicular',
+  'anomalía radicular',
+  'anomalia radicular',
+  'resto radicular'
+]);
+
+export function esEstadoExclusivoDeRaiz(estado: string | null | undefined): boolean {
+  return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(estado?.trim().toLowerCase() ?? '');
+}
+
 export function resolverColorPorEstadoClinico(estado: string | null | undefined, colorHexExplicito?: string | null): string {
   const coloresNeutros = new Set(['#fff', '#ffffff', '#fffdf5', '#fffefa', '#fffef9']);
   if (colorHexExplicito && !coloresNeutros.has(colorHexExplicito.trim().toLowerCase())) {

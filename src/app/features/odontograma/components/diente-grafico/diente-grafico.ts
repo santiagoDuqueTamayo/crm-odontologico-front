@@ -1,5 +1,10 @@
 import { Component, computed, input, output } from '@angular/core';
-import { CarasDiente, CaraVisual, DienteData } from '../../models/odontograma.models';
+import {
+  CarasDiente,
+  CaraVisual,
+  DienteData,
+  esEstadoExclusivoDeRaiz
+} from '../../models/odontograma.models';
 
 type FormaDiente = 'incisivo' | 'canino' | 'premolar' | 'molar';
 export type CaraCirculoId = keyof CarasDiente;
@@ -58,31 +63,6 @@ const COLORES_POR_ESTADO: Record<string, string> = {
   'en erupción': '#84CC16',
   'en erupcion': '#84CC16'
 };
-
-/**
- * Estados que afectan EXCLUSIVAMENTE a la raíz del diente (.raiz),
- * sin pintar la parte baja/visible del diente (.corona) ni el círculo de 5 caras.
- */
-const ESTADOS_EXCLUSIVOS_DE_RAIZ = new Set<string>([
-  'apicectomía',
-  'apicectomia',
-  'lesión periapical',
-  'lesion periapical',
-  'fractura radicular',
-  'perforación radicular',
-  'perforacion radicular',
-  'lesión de furca',
-  'lesion de furca',
-  'recesión gingival',
-  'recesion gingival',
-  'cálculo subgingival',
-  'calculo subgingival',
-  'reabsorción radicular',
-  'reabsorcion radicular',
-  'anomalía radicular',
-  'anomalia radicular',
-  'resto radicular'
-]);
 
 /**
  * Estados de diente completo que involucran tanto la raíz (.raiz) como la corona (.corona) y las caras.
@@ -177,7 +157,7 @@ export class DienteGraficoComponent {
         ([, cara]) =>
           cara &&
           !this.esEstadoSanoOPresente(cara.estado) &&
-          (data.raiz !== undefined || !this.esEstadoExclusivoDeRaiz(cara.estado))
+          (data.raiz !== undefined || !esEstadoExclusivoDeRaiz(cara.estado))
       )
       .map(([id, cara]) => ({
         id,
@@ -234,7 +214,7 @@ export class DienteGraficoComponent {
 
     if (
       !this.esEstadoSanoOPresente(estadoGeneral) &&
-      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+      !esEstadoExclusivoDeRaiz(estadoGeneral)
     ) {
       return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
@@ -307,7 +287,7 @@ export class DienteGraficoComponent {
     if (
       cara &&
       !this.esEstadoSanoOPresente(cara.estado) &&
-      !this.esEstadoExclusivoDeRaiz(cara.estado)
+      !esEstadoExclusivoDeRaiz(cara.estado)
     ) {
       return this.resolverColorEstado(cara.estado, cara.colorHex);
     }
@@ -315,7 +295,7 @@ export class DienteGraficoComponent {
     const estadoGeneral = data?.estadoGeneral?.estado ?? this.estado();
     if (
       !this.esEstadoSanoOPresente(estadoGeneral) &&
-      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+      !esEstadoExclusivoDeRaiz(estadoGeneral)
     ) {
       return this.resolverColorEstado(estadoGeneral, data?.estadoGeneral?.colorHex ?? null);
     }
@@ -349,13 +329,13 @@ export class DienteGraficoComponent {
     if (
       cara &&
       !this.esEstadoSanoOPresente(cara.estado) &&
-      !this.esEstadoExclusivoDeRaiz(cara.estado)
+      !esEstadoExclusivoDeRaiz(cara.estado)
     ) {
       return `${etiqueta}: ${cara.estado}`;
     }
     if (
       !this.esEstadoSanoOPresente(estadoGeneral) &&
-      !this.esEstadoExclusivoDeRaiz(estadoGeneral)
+      !esEstadoExclusivoDeRaiz(estadoGeneral)
     ) {
       return `${etiqueta}: ${estadoGeneral}`;
     }
@@ -369,12 +349,7 @@ export class DienteGraficoComponent {
   private afectaRaiz(estado: string | null | undefined): boolean {
     if (!estado) return false;
     const norm = estado.trim().toLowerCase();
-    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
-  }
-
-  private esEstadoExclusivoDeRaiz(estado: string | null | undefined): boolean {
-    if (!estado) return false;
-    return ESTADOS_EXCLUSIVOS_DE_RAIZ.has(estado.trim().toLowerCase());
+    return esEstadoExclusivoDeRaiz(norm) || ESTADOS_DIENTE_COMPLETO_CON_RAIZ.has(norm);
   }
 
   private obtenerPrioridadClinica(estado: string | null | undefined): number {

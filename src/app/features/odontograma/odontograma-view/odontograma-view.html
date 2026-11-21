@@ -1,10 +1,7 @@
 <div class="app-layout">
   <aside class="sidebar">
     <a class="brand-mark" href="#inicio" aria-label="Sonrisa Clínica, inicio">
-      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-        <path d="M20 5.5c-5.3-3-12.7.4-12 8.4.7 8.5 4.1 20.6 8.1 20.6 2.4 0 1.8-8.8 4.5-8.8s2.1 8.8 4.5 8.8c4 0 7.4-12.1 8.1-20.6.7-8-6.7-11.4-12-8.4Z" fill="currentColor"/>
-        <path d="M20 9v11M14.5 14.5h11" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
-      </svg>
+      <img src="sonrisa-clinica.svg" alt="" />
     </a>
 
     <nav class="side-nav" aria-label="Navegación principal">
@@ -44,7 +41,7 @@
     </section>
 
     @if (vistaActual() === 'paciente') {
-      <app-paciente-form [(paciente)]="datosPaciente" />
+      <app-paciente-form [(paciente)]="datosPaciente" [odontograma]="dientes()" />
     } @else {
       <div class="workspace-grid">
         <section id="odontograma" class="panel chart-panel" aria-labelledby="chart-title">

@@ -72,8 +72,9 @@
     }
   </div>
   <p class="patient-privacy">
-    El audio se envía a Groq Cloud para su transcripción. La ficha solo permanece en esta sesión
-    del navegador; no se guarda en una base de datos.
+    El audio se envía a Groq Cloud para su transcripción. La ficha y el odontograma permanecen
+    únicamente en la memoria de esta página; no se guardan en una base de datos y se borran al
+    recargarla.
   </p>
 
   <div class="patient-actions">
@@ -87,7 +88,7 @@
       </span>
     }
     <button class="button button-secondary" type="button" (click)="exportarPdf()">
-      Exportar ficha en PDF
+      Exportar ficha y odontograma en PDF
     </button>
   </div>
 </section>
